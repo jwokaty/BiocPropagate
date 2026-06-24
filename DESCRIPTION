@@ -1,0 +1,24 @@
+Package: BiocPropagate
+Title: Validate Bioconductor Package Versions and Build Status via R-Universe
+Version: 0.99.0
+Authors@R: person(
+    "Marcel", "Ramos", , "marcel.ramos@sph.cuny.edu", role = c("aut", "cre")
+    )
+Description: Provides tools for validating Bioconductor packages through the
+    r-universe ecosystem. Functions check for version consistency between a
+    local package and its r-universe counterpart, enforce proper version bump
+    rules, and report build and check status across platforms.
+License: Artistic-2.0
+Imports:
+    BiocManager,
+    glue,
+    jsonlite,
+    rjsoncons
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Collate: 
+    'api.R'
+    'filters.R'
+    'runiverse_status.R'
+    'runiverse_valid.R'
