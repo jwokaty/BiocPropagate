@@ -1,4 +1,7 @@
-.BIOC_UNIVERSE_URL <- "https://bioc.r-universe.dev/api/packages"
+.BASE_RUNIVERSE_ORG <- "bioc"
+.BIOC_UNIVERSE_URL <- glue::glue(
+    "https://{.BASE_RUNIVERSE_ORG}.r-universe.dev/api/packages"
+)
 
 .get_runi_meta <- function(pkgName) {
     glue::glue(
