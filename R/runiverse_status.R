@@ -8,20 +8,9 @@ runiverse_status <- function(pkgName) {
     rver[, 3L] <- 0L
 
     if (nzchar(system.file(package = pkgName)))
-        desc <- system.file("DESCRIPTION", package = pkgName) |>
-            read.dcf()
+        desc <- .get_sys_desc(pkgName)
     else
-        desc <- gh::gh(
-            "GET /repos/{owner}/{repo}/contents/{path}",
-            owner = "bioconductor-source",
-            repo = pkgName,
-            path = "DESCRIPTION"
-        ) |>
-            `[[`(x = _, i = "content") |>
-            base64enc::base64decode() |>
-            rawToChar() |>
-            textConnection() |>
-            read.dcf()
+        desc <- .get_gh_desc(pkgName)
 
     results <- glue::glue(
         .BIOC_UNIVERSE_URL, "/{pkgName}"
