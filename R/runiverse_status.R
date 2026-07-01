@@ -7,7 +7,21 @@ runiverse_status <- function(pkgName) {
     rver <- BiocManager:::.version_field("R")
     rver[, 3L] <- 0L
 
-    desc <- read.dcf(system.file("DESCRIPTION", package = pkgName))
+    if (nzchar(system.file(package = pkgName)))
+        desc <- system.file("DESCRIPTION", package = pkgName) |>
+            read.dcf()
+    else
+        desc <- gh::gh(
+            "GET /repos/{owner}/{repo}/contents/{path}",
+            owner = "bioconductor-source",
+            repo = pkgName,
+            path = "DESCRIPTION"
+        ) |>
+            `[[`(x = _, i = "content") |>
+            base64enc::base64decode() |>
+            rawToChar() |>
+            textConnection() |>
+            read.dcf()
 
     results <- glue::glue(
         .BIOC_UNIVERSE_URL, "/{pkgName}"
