@@ -27,4 +27,5 @@ Collate:
     'api.R'
     'filters.R'
     'runiverse_status.R'
-    'runiverse_valid.R'
+    'utilities.R'
+    'valid_version.R'
