@@ -1,26 +1,10 @@
 #' @title Check the status of a package in the R-Universe
 #'
 #' @examplesIf interactive()
-#' runiverse_status("BiocCheck")
+#' runiverse_ok("BiocCheck")
 #' @export
-runiverse_status <- function(pkgName) {
-    rver <- BiocManager:::.version_field("R")
-    rver[, 3L] <- 0L
-
-    if (nzchar(system.file(package = pkgName)))
-        desc <- .get_sys_desc(pkgName)
-    else
-        desc <- .get_gh_desc(pkgName)
-
-    results <- glue::glue(
-        .BIOC_UNIVERSE_URL, "/{pkgName}"
-    ) |>
-        rjsoncons::j_pivot(
-            path = "_jobs[]", as = "data.frame"
-        ) |>
-        .filter_r_ver() |>
-        .filter_other_checks() |>
-        .filter_unsupported(desc)
+runiverse_ok <- function(pkgName) {
+    results <- runiverse_status(pkgName)
 
     statuses <- results[["check"]] |>
         unlist() |>
@@ -59,4 +43,24 @@ runiverse_status <- function(pkgName) {
             paste(statuses, collapse = ", "),
             call. = FALSE
         )
+}
+
+runiverse_status <- function(pkgName) {
+    rver <- BiocManager:::.version_field("R")
+    rver[, 3L] <- 0L
+
+    if (nzchar(system.file(package = pkgName)))
+        desc <- .get_sys_desc(pkgName)
+    else
+        desc <- .get_gh_desc(pkgName)
+
+    glue::glue(
+        .BIOC_UNIVERSE_URL, "/{pkgName}"
+    ) |>
+        rjsoncons::j_pivot(
+            path = "_jobs[]", as = "data.frame"
+        ) |>
+        .filter_r_ver() |>
+        .filter_other_checks() |>
+        .filter_unsupported(desc)
 }
