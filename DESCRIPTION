@@ -11,6 +11,7 @@ Description: Provides tools for validating Bioconductor packages through the
 License: Artistic-2.0
 Imports:
     BiocManager,
+    gh,
     glue,
     jsonlite,
     rjsoncons
