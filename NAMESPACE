@@ -3,3 +3,4 @@
 export(is_incremental)
 export(runiverse_status)
 export(valid_version)
+importFrom(BiocBaseUtils,checkInstalled)
