@@ -11,10 +11,11 @@ Description: Provides tools for validating Bioconductor packages through the
 License: Artistic-2.0
 Imports:
     BiocManager,
-    gh,
     glue,
     jsonlite,
     rjsoncons
+Suggests:
+    gh
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
