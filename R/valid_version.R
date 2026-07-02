@@ -4,7 +4,7 @@
 valid_version <- function(pkgName) {
     message("Checking for version number mismatch with r-universe...")
 
-    pkg_version <- utils::packageVersion(pkgName) |> as.character()
+    pkg_version <- utils::packageVersion(pkgName)
     version_name <- BiocManager:::.version_field("BiocStatus") |>
         as.character()
     ru_version <- .get_ru_version(pkgName)
@@ -63,7 +63,7 @@ valid_version <- function(pkgName) {
 is_incremental <- function(pkgName) {
     message("Checking for valid version bump compared to r-universe version...")
 
-    pkg_version <- utils::packageVersion(pkgName) |> as.character()
+    pkg_version <- utils::packageVersion(pkgName)
     version_name <- BiocManager:::.version_field("BiocStatus") |>
         as.character()
     ru_version <- .get_ru_version(pkgName)

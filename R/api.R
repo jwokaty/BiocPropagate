@@ -33,5 +33,5 @@
     }
 
     mini_ver[matched_ver, "version"] |>
-        as.character()
+        as.package_version()
 }
