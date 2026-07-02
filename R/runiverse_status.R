@@ -1,6 +1,16 @@
 .KNOWN_STATUSES <- c("ERROR", "FAIL", "CANCELLED", "WARNING", "NOTE", "OK")
 
-#' @title Check the status of a package in the R-Universe
+#' @title Check if package builds/checks are successful in R-Universe
+#'
+#' @description This function checks the status of a package in the R-Universe.
+#'   It returns `TRUE` if at least one build/check has a non-failure status
+#'   (i.e., not `"ERROR"`, `"FAIL"`, or `"CANCELLED"`).
+#'
+#' @param pkgName `character(1)` The name of the package to query in the
+#'   R-Universe.
+#'
+#' @return `logical(1)` `TRUE` if at least one build/check status is not
+#'   `"ERROR"`, `"FAIL"`, or `"CANCELLED"`. Returns `FALSE` otherwise.
 #'
 #' @examplesIf interactive()
 #' runiverse_ok("BiocCheck")
