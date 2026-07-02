@@ -47,6 +47,22 @@ runiverse_ok <- function(pkgName) {
         )
 }
 
+#' @title Retrieve R-Universe package job details
+#'
+#' @description Query the Bioconductor R-Universe API for the jobs associated
+#'   with a package. The function retrieves the job list, filters it to match
+#'   the current R version used by Bioconductor, removes auxiliary checks (e.g.,
+#'   `"bioc-checks"`, `"wasm-release"`), and filters out platforms specified as
+#'   unsupported in the package's `DESCRIPTION` file.
+#'
+#' @param pkgName `character(1)` The name of the package to query in the
+#'   R-Universe.
+#'
+#' @return A `data.frame` of filtered jobs from R-Universe, representing the
+#'   build and check statuses across different platforms.
+#'
+#' @examplesIf interactive()
+#' runiverse_status("BiocCheck")
 #' @export
 runiverse_status <- function(pkgName) {
     rver <- BiocManager:::.version_field("R")

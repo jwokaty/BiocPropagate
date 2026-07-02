@@ -2,12 +2,24 @@
 % Please edit documentation in R/runiverse_status.R
 \name{runiverse_status}
 \alias{runiverse_status}
-\title{Check the status of a package in the R-Universe}
+\title{Retrieve R-Universe package job details}
 \usage{
 runiverse_status(pkgName)
 }
+\arguments{
+\item{pkgName}{\code{character(1)} The name of the package to query in the
+R-Universe.}
+}
+\value{
+A \code{data.frame} of filtered jobs from R-Universe, representing the
+build and check statuses across different platforms.
+}
 \description{
-Check the status of a package in the R-Universe
+Query the Bioconductor R-Universe API for the jobs associated
+with a package. The function retrieves the job list, filters it to match
+the current R version used by Bioconductor, removes auxiliary checks (e.g.,
+\code{"bioc-checks"}, \code{"wasm-release"}), and filters out platforms specified as
+unsupported in the package's \code{DESCRIPTION} file.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
