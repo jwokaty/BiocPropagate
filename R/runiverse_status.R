@@ -29,6 +29,15 @@ runiverse_ok <- function(pkgName) {
     )
 }
 
+#' @noRd
+#' @title Validate build/check statuses
+#'
+#' @description Check that the input statuses are recognized. Issues a warning
+#'   if any unrecognized status is found.
+#'
+#' @param statuses `character` A vector of status names to validate.
+#'
+#' @return `NULL` (invisibly). Used for side-effects.
 .validate_status <- function(statuses) {
     if (!all(statuses %in% .KNOWN_STATUSES))
         warning(
