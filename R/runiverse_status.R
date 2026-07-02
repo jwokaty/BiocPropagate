@@ -1,3 +1,5 @@
+.KNOWN_STATUSES <- c("ERROR", "FAIL", "CANCELLED", "WARNING", "NOTE", "OK")
+
 #' @title Check the status of a package in the R-Universe
 #'
 #' @examplesIf interactive()
@@ -12,32 +14,13 @@ runiverse_ok <- function(pkgName) {
 
     .validate_status(statuses)
 
-    status_rules <- data.frame(
-        status = c("ERROR", "FAIL", "CANCELLED", "WARNING", "NOTE", "OK"),
-        handler = c(
-            rep("stop", 3L),
-            rep("message", 3L)
-        )
+    any(
+        !statuses %in% c("ERROR", "FAIL", "CANCELLED")
     )
-
-    matched <-
-        status_rules[status_rules[["status"]] %in% statuses, , drop = FALSE]
-
-    if (nrow(matched)) {
-        handler <- get(matched[1L, "handler"], mode = "function")
-        sQuote(matched[["status"]], FALSE) |>
-            paste(... = _, collapse = ", ") |>
-            handler(
-                ... = _,
-                " status found in r-universe checks for package: ",
-                pkgName
-            )
-    }
 }
 
 .validate_status <- function(statuses) {
-    valid_statuses <- c("ERROR", "FAIL", "CANCELLED", "WARNING", "NOTE", "OK")
-    if (!all(statuses %in% valid_statuses))
+    if (!all(statuses %in% .KNOWN_STATUSES))
         warning(
             "Invalid status found in r-universe checks: ",
             paste(statuses, collapse = ", "),
@@ -45,6 +28,7 @@ runiverse_ok <- function(pkgName) {
         )
 }
 
+#' @export
 runiverse_status <- function(pkgName) {
     rver <- BiocManager:::.version_field("R")
     rver[, 3L] <- 0L
