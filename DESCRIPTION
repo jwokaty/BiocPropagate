@@ -9,23 +9,32 @@ Description: Provides tools for validating Bioconductor packages through the
     local package and its r-universe counterpart, enforce proper version bump
     rules, and report build and check status across platforms.
 License: Artistic-2.0
+Depends: R (>= 4.6.0)
 Imports:
     BiocManager,
+    BiocBaseUtils,
     glue,
     jsonlite,
     rjsoncons
 Suggests:
     BiocStyle,
+    curl,
     gh,
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 VignetteBuilder: knitr
 Collate: 
     'api.R'
+    'criteria.R'
     'filters.R'
+    'git_checks.R'
+    'propagation.R'
     'runiverse_status.R'
     'utilities.R'
     'valid_version.R'
+    'version.R'
+    'views.R'
