@@ -477,7 +477,6 @@ default_criteria <- function() {
     criteria <- list(
         gates = list(
             vignettes   = .check_vignettes,
-            bioc_checks = .check_bioc_checks,
             version     = .check_version_valid
         ),
         platform = list(
