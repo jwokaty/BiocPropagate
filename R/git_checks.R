@@ -1,3 +1,7 @@
+#' Base repository path
+#' @noRD
+.BASE_REPO_PATH <- "https://github.com/bioc/"
+
 #' Individual file size limit
 #' @noRd
 .MAX_FILE_SIZE_BYTES <- 5 * 1024^2
@@ -5,14 +9,14 @@
 #' @noRd
 #' @title Resolve a clone URL for a package's repository
 #'
-#' @param pkg_data The r-universe package payload, as a named list.
+#' @param pkg_data named list 
 #'
-#' @return `character(1)` clone URL (`RemoteUrl`), or `NULL` if absent.
+#' @return `character(1)` clone URL.
 #'
 #' @examples
-#' .repo_clone_url(list(RemoteUrl = "https://git.bioconductor.org/packages/BiocCheck"))
+#' .repo_clone_url(list(Package = "BiocCheck"))
 .repo_clone_url <- function(pkg_data) {
-    pkg_data[["RemoteUrl"]]
+    glue::glue("{.BASE_REPO_PATH}/{pkg_data[['Package']]}")
 }
 
 #' @noRd
@@ -34,7 +38,7 @@
 #' list.files(dest)
 .clone_repo <- function(url, branch = NULL) {
     if (is.null(url))
-        stop("no clone URL available (RemoteUrl missing from payload)")
+        stop("no clone URL available")
 
     dest <- file.path(
         tempdir(),
@@ -64,7 +68,7 @@
 #'   local repo path.
 #'
 #' @examplesIf curl::has_internet()
-#' pkg_data <- list(RemoteUrl = "https://git.bioconductor.org/packages/BiocCheck")
+#' pkg_data <- list(Package = "BiocCheck")
 #' repo <- .make_repo_accessor(pkg_data, branch = NULL)
 #' repo()  # clones on first call
 #' identical(repo(), repo())  # cached, no second clone
@@ -73,7 +77,7 @@
     cache$path <- repo_path
     function() {
         if (is.null(cache$path))
-            cache$path <- .clone_repo(.repo_clone_url(pkg_data), branch)
+            cache$path <- .clone_repo(.repo_clone_url(pkg_data[["Package"]]), branch)
         cache$path
     }
 }
@@ -86,7 +90,7 @@
 #'   `git cat-file --batch-check`), not just the working tree, to catch a
 #'   large file that was later deleted but still bloats the repo.
 #'
-#' @param pkg_data,branch,desc,views Unused; present for gate-signature
+#' @param pkg_data,branch,bioc_pkg_data Unused; present for gate-signature
 #'   consistency (see criteria.R).
 #' @param repo Zero-arg accessor from `.make_repo_accessor()`.
 #'
@@ -94,10 +98,10 @@
 #'   is `NA_character_` on pass.
 #'
 #' @examplesIf curl::has_internet()
-#' pkg_data <- list(RemoteUrl = "https://git.bioconductor.org/packages/BiocCheck")
+#' pkg_data <- list(Package = "BiocCheck")
 #' repo <- .make_repo_accessor(pkg_data, branch = NULL)
-#' .check_no_large_files(list(), NULL, list(), NULL, repo)
-.check_no_large_files <- function(pkg_data, branch, desc, views, repo) {
+#' .check_no_large_files(list(), NULL, NULL, repo)
+.check_no_large_files <- function(pkg_data, branch, bioc_pkg_data, repo) {
     path <- repo()
 
     batch_check <- shQuote("%(objecttype) %(objectname) %(objectsize) %(rest)")
@@ -156,7 +160,7 @@
 #'   signature itself, to catch LFS usage where `.gitattributes` was later
 #'   removed but the pointer blobs are still in history.
 #'
-#' @param pkg_data,branch,desc,views Unused; present for gate-signature
+#' @param pkg_data,branch,bioc_pkg_data Unused; present for gate-signature
 #'   consistency (see criteria.R).
 #' @param repo accessor from `.make_repo_accessor()`.
 #'
@@ -164,10 +168,10 @@
 #'   is `NA_character_` on pass.
 #'
 #' @examplesIf curl::has_internet()
-#' pkg_data <- list(RemoteUrl = "https://git.bioconductor.org/packages/BiocCheck")
+#' pkg_data <- list(Package= "BiocCheck")
 #' repo <- .make_repo_accessor(pkg_data, branch = NULL)
-#' .check_no_git_lfs(list(), NULL, list(), NULL, repo)
-.check_no_git_lfs <- function(pkg_data, branch, desc, views, repo) {
+#' .check_no_git_lfs(list(), NULL, NULL, repo)
+.check_no_git_lfs <- function(pkg_data, branch, bioc_pkg_data, repo) {
     path <- repo()
     attrs_file <- file.path(path, ".gitattributes")
 
@@ -227,24 +231,23 @@
 #' @noRd
 #' @title Gate: DESCRIPTION does not declare a `Remotes:` field
 #'
-#' @param pkg_data,branch,views,repo Unused; present for gate-signature
+#' @param pkg_data DESCRIPTION-equivalent metadata; source of `Remotes`.
+#' @param branch,bioc_pkg_data,repo Unused; present for gate-signature
 #'   consistency (see criteria.R).
-#' @param desc DESCRIPTION-equivalent metadata; source of `Remotes`.
 #'
 #' @return `list(pass = logical(1), message = character(1))`; `message`
 #'   is `NA_character_` on pass.
 #'
 #' @examples
-#' .check_no_remotes(list(), "devel", list(Remotes = NULL), NULL, function() NULL)
-#' .check_no_remotes(list(), "devel", list(Remotes = "github::user/pkg"), NULL,
+#' .check_no_remotes(list(Remotes = NULL), "devel", NULL, function() NULL)
+#' .check_no_remotes(list(Remotes = "github::user/pkg"), "devel", NULL,
 #'   function() NULL)
 #' .check_no_remotes(
-#'     list(), "devel",
 #'     list(Remotes = c("github::user/pkg1", "gitlab::user/pkg2")),
-#'     NULL, function() NULL
+#'     "devel", NULL, function() NULL
 #' )
-.check_no_remotes <- function(pkg_data, branch, desc, views, repo) {
-    remotes <- tryCatch(desc[["Remotes"]], error = function(e) NULL)
+.check_no_remotes <- function(pkg_data, branch, bioc_pkg_data, repo) {
+    remotes <- tryCatch(pkg_data[["Remotes"]], error = function(e) NULL)
 
     if (is.null(remotes) || !length(remotes))
         return(list(pass = TRUE, message = NA_character_))
@@ -262,7 +265,7 @@
 #' @title Gate: no unresolved merge-conflict markers committed to tracked
 #'   files
 #'
-#' @param pkg_data,branch,desc,views Unused; present for gate-signature
+#' @param pkg_data,branch,bioc_pkg_data Unused; present for gate-signature
 #'   consistency.
 #' @param repo accessor from `.make_repo_accessor()`.
 #'
@@ -270,10 +273,10 @@
 #'   is `NA_character_` on pass.
 #'
 #' @examplesIf curl::has_internet()
-#' pkg_data <- list(RemoteUrl = "https://git.bioconductor.org/packages/BiocCheck")
+#' pkg_data <- list(Package = "BiocCheck")
 #' repo <- .make_repo_accessor(pkg_data, branch = NULL)
-#' .check_no_merge_conflicts(list(), NULL, list(), NULL, repo)
-.check_no_merge_conflicts <- function(pkg_data, branch, desc, views, repo) {
+#' .check_no_merge_conflicts(list(), NULL, NULL, repo)
+.check_no_merge_conflicts <- function(pkg_data, branch, bioc_pkg_data, repo) {
     path <- repo()
     pattern <- "^(<{7}|={7}|>{7})( |$)"
 
@@ -314,7 +317,7 @@
 #' @noRd
 #' @title Gate: no commit adds a line matching a known secret pattern
 #'
-#' @param pkg_data,branch,desc,views Unused; present for gate-signature
+#' @param pkg_data,branch,bioc_pkg_data Unused; present for gate-signature
 #'   consistency.
 #' @param repo accessor from `.make_repo_accessor()`.
 #'
@@ -322,10 +325,10 @@
 #'   is `NA_character_` on pass.
 #'
 #' @examplesIf curl::has_internet()
-#' pkg_data <- list(RemoteUrl = "https://git.bioconductor.org/packages/BiocCheck")
+#' pkg_data <- list(Package = "BiocCheck")
 #' repo <- .make_repo_accessor(pkg_data, branch = NULL)
-#' .check_no_secrets(list(), NULL, list(), NULL, repo)
-.check_no_secrets <- function(pkg_data, branch, desc, views, repo) {
+#' .check_no_secrets(list(), NULL, NULL, repo)
+.check_no_secrets <- function(pkg_data, branch, bioc_pkg_data, repo) {
     path <- repo()
 
     out <- tryCatch(

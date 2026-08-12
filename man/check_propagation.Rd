@@ -9,7 +9,8 @@ check_propagation(
   branch = "release",
   criteria = default_criteria(),
   platforms = .DEFAULT_PLATFORMS,
-  views = NULL,
+  bioc_pkg_data = NULL,
+  bioc_pkg_data_type = NULL,
   repo_path = NULL
 )
 }
@@ -26,9 +27,15 @@ or explicit version (e.g. \code{"3.22"}).}
 \item{platforms}{\code{character()} OS-arch strings to check. The result's
 \code{platforms} element is built directly from this argument.}
 
-\item{views}{A \code{data.frame} with \code{Package}/\code{Version} columns giving the
-currently-published Bioconductor version, or \code{NULL} (no VIEWS
-available).}
+\item{bioc_pkg_data}{\code{list(source, platform)} -- see
+\code{.get_all_bioc_pkg_data()} -- or \code{NULL} (the default) to fetch it
+internally. A caller that already has this loaded (e.g.
+\code{biocPropagationPipe}) should pass it directly to skip the redundant
+fetch.}
+
+\item{bioc_pkg_data_type}{\code{character(1)} or \code{NULL} (default) to
+auto-detect via \code{.detect_bioc_pkg_type()}. Passed to
+\code{.get_all_bioc_pkg_data()} when \code{bioc_pkg_data} isn't supplied.}
 
 \item{repo_path}{\code{character(1)} or \code{NULL}. An already-cloned repo path.
 If \code{NULL}, cloned internally on first use by a git-based gate, if any
@@ -52,6 +59,6 @@ Maintainer must check GitHub Action log to diagnose.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
-check_propagation("rtracklayer", branch = "devel", views = my_views)
+check_propagation("rtracklayer", branch = "devel")
 \dontshow{\}) # examplesIf}
 }

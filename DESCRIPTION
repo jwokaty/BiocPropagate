@@ -29,6 +29,7 @@ RoxygenNote: 8.0.0
 VignetteBuilder: knitr
 Collate: 
     'api.R'
+    'bioc_pkg_data.R'
     'criteria.R'
     'filters.R'
     'git_checks.R'
@@ -37,4 +38,3 @@ Collate:
     'utilities.R'
     'valid_version.R'
     'version.R'
-    'views.R'

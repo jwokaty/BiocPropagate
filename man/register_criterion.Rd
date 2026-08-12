@@ -13,8 +13,8 @@ register_criterion(criteria, name, fun, type = c("gates", "platform"))
 with the same name and \code{type}).}
 
 \item{fun}{A function returning \code{list(pass = logical(1), message = character(1))}. For \code{type = "gates"}:
-\verb{function(pkg_data, branch, desc, views, repo)}. For
-\code{type = "platform"}: \verb{function(pkg_data, branch, desc, views, platform)}.}
+\verb{function(pkg_data, branch, desc, bioc_pkg_data, repo)}. For
+\code{type = "platform"}: \verb{function(pkg_data, branch, desc, bioc_pkg_data, platform)}.}
 
 \item{type}{\code{character(1)} Either \code{"gates"} or \code{"platform"}.}
 }
@@ -30,7 +30,7 @@ the hook point for propagation policy that changes over time.
 criteria <- default_criteria()
 criteria <- register_criterion(
     criteria, "always_pass",
-    function(pkg_data, branch, desc, views, repo)
+    function(pkg_data, branch, desc, bioc_pkg_data, repo)
         list(pass = TRUE, message = NA_character_),
     type = "gates"
 )
