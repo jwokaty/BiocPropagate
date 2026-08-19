@@ -1,44 +1,17 @@
-#' Default os-arch columns evaluated when `platforms` isn't specified.
-#' @noRd
-.DEFAULT_PLATFORMS <- c(
-    "windows-arm64", "windows-x86_64",
-    "macos-arm64", "macos-x86_64",
-    "linux-arm64", "linux-x86_64"
-)
-
 #' Build/check statuses that count as passing. Only ERROR/FAIL/CANCELLED
 #' are failures.
 #' @noRd
 .PASSING_STATUSES <- c("OK", "WARNING", "NOTE")
 
-#' r-universe's `_binaries[].os` uses different tokens than
-#' `_jobs[].config` (e.g. "mac" vs "macos"). Maps platform-string os
-#' tokens to the corresponding `_binaries[].os` value.
-#' @noRd
-.BINARY_OS_MAP <- c(macos = "mac", windows = "win", linux = "linux")
-
 #' @noRd
 #' @title Test-fixture helper: a minimal r-universe payload
 #'
-#' @param needs_compilation `logical(1)`.
-#'
 #' @return A named list shaped like a real r-universe package payload.
-.example_pkg_data <- function(needs_compilation = FALSE) {
+.example_pkg_data <- function() {
     r_ver <- paste0(as.character(.branch_r_version("release")), ".0")
-    binaries <- data.frame(
-        r = r_ver,
-        os = c("mac", "win", "win", "linux"),
-        status = "success",
-        check = "OK",
-        stringsAsFactors = FALSE
-    )
-    if (needs_compilation)
-        binaries[["arch"]] <- c("aarch64", "x86_64", "aarch64", "x86_64")
-
     list(
         Package = "examplePkg",
         Version = "1.2.0",
-        NeedsCompilation = if (needs_compilation) "yes" else "no",
         `_jobs` = data.frame(
             config = c(
                 "source", "bioc-checks",
@@ -49,8 +22,7 @@
             r = r_ver,
             check = "OK",
             stringsAsFactors = FALSE
-        ),
-        `_binaries` = binaries
+        )
     )
 }
 
@@ -69,30 +41,24 @@
 }
 
 #' @noRd
-#' @title Does this package need compilation?
+#' @title Split a `_jobs` config string like "linux-devel-x86_64" into
+#'   os/r_channel/arch
 #'
-#' @details Uses `NeedsCompilation` to determine if package needs
-#'   compilation. If not present, checks binaries.
+#' @param config `character(1)`, e.g. `"linux-devel-x86_64"`.
 #'
-#' @param pkg_data The r-universe payload (`NeedsCompilation`, and
-#'   `_binaries` as a fallback).
-#'
-#' @return `logical(1)`.
+#' @return `list(os, r_channel, arch)`, all `NA_character_` if `config`
+#'   isn't a platform row.
 #'
 #' @examples
-#' .needs_compilation(list(NeedsCompilation = "yes"))
-#' .needs_compilation(list(`_binaries` = data.frame(arch = "x86_64")))
-#' .needs_compilation(list())
-.needs_compilation <- function(pkg_data) {
-    declared <- pkg_data[["NeedsCompilation"]]
-    if (!is.null(declared) && !is.na(declared) && nzchar(declared))
-        return(identical(declared, "yes"))
-
-    binaries <- pkg_data[["_binaries"]]
-    if (!is.null(binaries) && NROW(binaries))
-        return("arch" %in% colnames(binaries))
-
-    TRUE
+#' .parse_job_config("linux-devel-x86_64")
+#' .parse_job_config("source")
+.parse_job_config <- function(config) {
+    if (config %in% c("source", "bioc-checks"))
+        return(list(os = NA_character_, r_channel = NA_character_, arch = NA_character_))
+    parts <- strsplit(config, "-", fixed = TRUE)[[1L]]
+    if (length(parts) < 3L)
+        return(list(os = NA_character_, r_channel = NA_character_, arch = NA_character_))
+    list(os = parts[1L], r_channel = parts[2L], arch = paste(parts[-(1:2)], collapse = "-"))
 }
 
 #' Config values in `_jobs` that are gate-level checks, not platform
@@ -145,27 +111,27 @@
 #' @noRd
 #' @title Gate: did the vignette/source build ("source" job) pass?
 #'
-#' @param pkg_data,branch,bioc_pkg_data,repo See `.check_gate_job()`; only
-#'   `pkg_data` is used.
+#' @param pkg_data,branch,bioc_pkg_data, source_path See `.check_gate_job()`;
+#'   only `pkg_data` is used.
 #'
 #' @return `list(pass = logical(1), message = character(1))`.
 #'
 #' @examples
-#' .check_vignettes(.example_pkg_data(), "release", NULL, function() NULL)
-.check_vignettes <- function(pkg_data, branch, bioc_pkg_data, repo)
+#' .check_vignettes(.example_pkg_data(), "release", NULL, NULL)
+.check_vignettes <- function(pkg_data, branch, bioc_pkg_data, source_path)
     .check_gate_job(pkg_data, .GATE_JOB_CONFIGS[["vignettes"]])
 
 #' @noRd
 #' @title Gate: BiocCheck compliance job ("bioc-checks") pass?
 #'
-#' @param pkg_data,branch,bioc_pkg_data,repo See `.check_gate_job()`; only
-#'   `pkg_data` is used.
+#' @param pkg_data,branch,bioc_pkg_data,source_path See `.check_gate_job()`;
+#'   only `pkg_data` is used.
 #'
 #' @return `list(pass = logical(1), message = character(1))`.
 #'
 #' @examples
-#' .check_bioc_checks(.example_pkg_data(), "release", NULL, function() NULL)
-.check_bioc_checks <- function(pkg_data, branch, bioc_pkg_data, repo)
+#' .check_bioc_checks(.example_pkg_data(), "release", NULL, NULL)
+.check_bioc_checks <- function(pkg_data, branch, bioc_pkg_data, source_path)
     .check_gate_job(pkg_data, .GATE_JOB_CONFIGS[["bioc_checks"]], branch)
 
 #' @noRd
@@ -187,7 +153,7 @@
 #' @param pkg_data The r-universe payload.
 #' @param branch `character(1)` Bioc branch tag or version -- resolved to
 #'   release/devel status, which determines which pattern set applies.
-#' @param repo Unused.
+#' @param source_path Unused.
 #' @param bioc_pkg_data `list(source, platform)` -- see
 #'   `.get_all_bioc_pkg_data()`. Uses `source` only.
 #'
@@ -198,8 +164,8 @@
 #' pkg_data[["Version"]] <- "1.2.5"
 #' source_data <- data.frame(Package = "examplePkg", Version = "1.2.0")
 #' bioc_pkg_data <- list(source = source_data)
-#' .check_version_valid(pkg_data, "release", bioc_pkg_data, function() NULL)
-.check_version_valid <- function(pkg_data, branch, bioc_pkg_data, repo) {
+#' .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
+.check_version_valid <- function(pkg_data, branch, bioc_pkg_data, source_path) {
     current <- pkg_data[["Version"]]
     previous <- .lookup_bioc_pkg_version(bioc_pkg_data$source, pkg_data[["Package"]])
 
@@ -240,56 +206,6 @@
 
     list(pass = FALSE, message = glue::glue(
         "version {current} is not a valid propagation over {previous}"
-    ))
-}
-
-#' @noRd
-#' @title Platform check: did R CMD check pass for this OS-arch, at the R
-#'   version paired with `branch`?
-#'
-#' @param pkg_data The r-universe payload (also used for
-#'   `.needs_compilation()`).
-#' @param branch `character(1)` Bioc branch tag or version.
-#' @param bioc_pkg_data Unused.
-#' @param platform `character(1)`, e.g. `"macos-arm64"`.
-#'
-#' @return `list(pass = logical(1), message = character(1))`.
-#'
-#' @examples
-#' pkg_data <- .example_pkg_data()
-#' .check_build_status(pkg_data, "release", NULL, "macos-arm64")
-.check_build_status <- function(pkg_data, branch, bioc_pkg_data, platform) {
-    p <- .parse_platform(platform)
-    jobs <- pkg_data[["_jobs"]]
-    rver <- .branch_r_version(branch)
-    matched_r <- jobs[.major_minor(jobs[["r"]]) == rver, ]
-
-    row <- if (.needs_compilation(pkg_data)) {
-        matched_r[
-            startsWith(matched_r[["config"]], paste0(p$os, "-")) &
-                endsWith(matched_r[["config"]], paste0("-", p$arch)),
-        ]
-    } else {
-        # Pure-R packages get one job per OS (no arch split); any arch's
-        # column maps onto that single job. Gate configs (e.g. "source",
-        # "bioc-checks") and non-platform entries (e.g. "wasm-release")
-        # never match an os-prefix like "macos-"/"windows-"/"linux-", so
-        # they're naturally excluded here without needing an explicit
-        # exclusion list.
-        matched_r[startsWith(matched_r[["config"]], paste0(p$os, "-")), ]
-    }
-
-    if (!nrow(row))
-        return(list(pass = FALSE, message = glue::glue(
-            "no build job found for {platform} at R {rver}"
-        )))
-
-    if (all(row[["check"]] %in% .PASSING_STATUSES))
-        return(list(pass = TRUE, message = NA_character_))
-
-    list(pass = FALSE, message = glue::glue(
-        "{platform} build status: ",
-        "{paste(unique(row[['check']]), collapse = ', ')}"
     ))
 }
 
@@ -392,73 +308,6 @@
 }
 
 #' @noRd
-#' @title Platform check: was a binary produced and installable for this
-#'   OS-arch, at the R version paired with `branch`?
-#'
-#' @details `arch` is present in every `_binaries` entry (wasm included --
-#'   its one arch value is `"emscripten"`) when `NeedsCompilation` is
-#'   `"yes"`, and absent from every entry (again including wasm) when it's
-#'   `"no"`.
-#'
-#' @param pkg_data The r-universe payload (also used for
-#'   `.needs_compilation()`).
-#' @param branch `character(1)` Bioc branch tag or version.
-#' @param bioc_pkg_data Unused.
-#' @param platform `character(1)`, e.g. `"macos-arm64"`.
-#'
-#' @return `list(pass = logical(1), message = character(1))`.
-#'
-#' @examples
-#' pkg_data <- .example_pkg_data()
-#' .check_binary_status(pkg_data, "release", NULL, "macos-arm64")
-.check_binary_status <- function(pkg_data, branch, bioc_pkg_data, platform) {
-    p <- .parse_platform(platform)
-    bin_os <- .BINARY_OS_MAP[[p$os]]
-    binaries <- pkg_data[["_binaries"]]
-    if (is.null(binaries) || !NROW(binaries))
-        return(list(pass = FALSE, message = "no binaries reported"))
-
-    rver <- .branch_r_version(branch)
-    matched_r <- binaries[.major_minor(binaries[["r"]]) == rver, ]
-    matched_os <- matched_r[matched_r[["os"]] == bin_os, ]
-
-    row <- if (.needs_compilation(pkg_data)) {
-        if (!"arch" %in% colnames(matched_os))
-            return(list(pass = FALSE, message = glue::glue(
-                "no {platform} binary found (missing arch column)"
-            )))
-        binary_arch <- vapply(
-            matched_os[["arch"]], .canonicalize_token, character(1L),
-            .ARCH_ALIASES
-        )
-        matched_os[binary_arch ==
-            .canonicalize_token(p$arch, .ARCH_ALIASES), ]
-    } else {
-        # Pure-R packages omit `arch` entirely
-        matched_os
-    }
-
-    if (!nrow(row))
-        return(list(pass = FALSE, message = glue::glue(
-            "no binary found for {platform} at R {rver}"
-        )))
-
-    status_ok <- all(row[["status"]] == "success")
-    # wasm binaries have no `check` field; missing check is fine if
-    # status is "success".
-    check_ok <- all(is.na(row[["check"]]) | row[["check"]] %in% .PASSING_STATUSES)
-
-    if (status_ok && check_ok)
-        return(list(pass = TRUE, message = NA_character_))
-
-    list(pass = FALSE, message = glue::glue(
-        "{platform} binary status: ",
-        "{paste(unique(row[['status']]), collapse = ', ')} ",
-        "/ check: {paste(unique(row[['check']]), collapse = ', ')}"
-    ))
-}
-
-#' @noRd
 #' @title Platform check: does propagating this platform actually
 #'   advance its published version?
 #'
@@ -533,63 +382,83 @@
     ))
 }
 
+#' @noRd
+#' @title Row check: did this specific job pass, at the R version paired
+#'   with `branch`?
+#'
+#' @param row One row of `_jobs` (`config`, `r`, `check`).
+#'
+#' @return `list(pass = logical(1), message = character(1))`.
+.check_row_status <- function(pkg_data, branch, bioc_pkg_data, row) {
+    rver <- .branch_r_version(branch)
+    if (.major_minor(row[["r"]]) != rver)
+        return(list(pass = FALSE, message = glue::glue(
+            "R {row[['r']]} does not match branch's paired R {rver}"
+        )))
+
+    if (row[["check"]] %in% .PASSING_STATUSES)
+        return(list(pass = TRUE, message = NA_character_))
+
+    list(pass = FALSE, message = glue::glue("job status: {row[['check']]}"))
+}
+
+#' @noRd
+#' @title Row check: is this row's platform NOT declared unsupported?
+#'
+#' @details Derives a canonical `os-arch` string from `row[["config"]]`
+#'   and delegates to `.check_supported_platform()`. Non-platform rows
+#'   (`"source"`, `"bioc-checks"`) pass automatically.
+.check_row_supported_platform <- function(pkg_data, branch, bioc_pkg_data, row) {
+    p <- .parse_job_config(row[["config"]])
+    if (is.na(p$os))
+        return(list(pass = TRUE, message = NA_character_))
+    .check_supported_platform(
+        pkg_data, branch, bioc_pkg_data, paste(p$os, p$arch, sep = "-")
+    )
+}
+
+#' @noRd
+#' @title Row check: does this row's platform show a valid version
+#'   advance over Bioconductor?
+#'
+#' @details Same derivation as `.check_row_supported_platform()`.
+.check_row_platform_version <- function(pkg_data, branch, bioc_pkg_data, row) {
+    p <- .parse_job_config(row[["config"]])
+    if (is.na(p$os))
+        return(list(pass = TRUE, message = NA_character_))
+    .check_platform_version_valid(
+        pkg_data, branch, bioc_pkg_data, paste(p$os, p$arch, sep = "-")
+    )
+}
+
 #' @title Default propagation criteria
 #'
-#' @description The default gate and platform criteria used by
-#'   [check_propagation()]. To opt *out* of the git-based gates (e.g. to
-#'   avoid the clone cost), remove them explicitly:
+#' @description The default gate and row criteria used by
+#'   [check_propagation()]. Copy and modify the returned list (via
+#'   [register_criterion()]) to add, remove, or override criteria.
 #'
-#'   ```r
-#'   criteria <- default_criteria()
-#'   criteria$gates[names(git_criteria()$gates)] <- NULL
-#'   ```
-#'
-#'   Copy and modify the returned list (via [register_criterion()]) to
-#'   add, remove, or override criteria as propagation policy evolves.
-#'
-#' @return A list with two elements, `gates` and `platform`, each a named
+#' @return A list with two elements, `gates` and `row`, each a named
 #'   list of criterion functions.
 #'
 #' @examples
 #' criteria <- default_criteria()
 #' names(criteria$gates)
-#' names(criteria$platform)
+#' names(criteria$row)
 #'
 #' @export
 default_criteria <- function() {
     criteria <- list(
         gates = list(
-            vignettes   = .check_vignettes,
-            version     = .check_version_valid
+            vignettes = .check_vignettes,
+            version   = .check_version_valid
         ),
-        platform = list(
-            build           = .check_build_status,
-            binary          = .check_binary_status,
-            unsupported     = .check_supported_platform,
-            platform_version = .check_platform_version_valid
+        row = list(
+            status           = .check_row_status,
+            unsupported      = .check_row_supported_platform,
+            platform_version = .check_row_platform_version
         )
     )
-    criteria$gates <- c(criteria$gates, git_criteria()$gates)
-    criteria
-}
-
-#' @title Default criteria for check_propagation_from_results()
-#'
-#' @description Identical to [default_criteria()], minus the `binary`
-#'   platform check.
-#'
-#' @return A list with two elements, `gates` and `platform`, same shape
-#'   as [default_criteria()].
-#'
-#' @examples
-#' criteria <- default_results_criteria()
-#' names(criteria$platform)
-#' # "binary" is absent, unlike default_criteria()
-#'
-#' @export
-default_results_criteria <- function() {
-    criteria <- default_criteria()
-    criteria$platform$binary <- NULL
+    criteria$gates <- c(criteria$gates, source_criteria()$gates)
     criteria
 }
 
@@ -604,10 +473,9 @@ default_results_criteria <- function() {
 #'   with the same name and `type`).
 #' @param fun A function returning `list(pass = logical(1), message =
 #'   character(1))`. For `type = "gates"`:
-#'   `function(pkg_data, branch, bioc_pkg_data, repo)`. For
-#'   `type = "platform"`: `function(pkg_data, branch, bioc_pkg_data,
-#'   platform)`.
-#' @param type `character(1)` Either `"gates"` or `"platform"`.
+#'   `function(pkg_data, branch, bioc_pkg_data, source_path)`. For
+#'   `type = "row"`: `function(pkg_data, branch, bioc_pkg_data, row)`.
+#' @param type `character(1)` Either `"gates"` or `"row"`.
 #'
 #' @return The updated criteria list.
 #'
@@ -615,14 +483,14 @@ default_results_criteria <- function() {
 #' criteria <- default_criteria()
 #' criteria <- register_criterion(
 #'     criteria, "always_pass",
-#'     function(pkg_data, branch, bioc_pkg_data, repo)
+#'     function(pkg_data, branch, bioc_pkg_data, source_path)
 #'         list(pass = TRUE, message = NA_character_),
 #'     type = "gates"
 #' )
 #' names(criteria$gates)
 #'
 #' @export
-register_criterion <- function(criteria, name, fun, type = c("gates", "platform")) {
+register_criterion <- function(criteria, name, fun, type = c("gates", "row")) {
     type <- match.arg(type)
     criteria[[type]][[name]] <- fun
     criteria
