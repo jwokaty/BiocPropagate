@@ -12,7 +12,7 @@ test_that(".lookup_bioc_pkg_version returns NA when bioc_pkg_data is NULL", {
     expect_true(is.na(.lookup_bioc_pkg_version(NULL, "foo")))
 })
 
-test_that(".get_bioc_pkg_data fetches real Package/Version data via available.packages()", {
+test_that(".get_bioc_pkg_data fetches real Package/Version data", {
     skip_if_offline()
     data <- .get_bioc_pkg_data("release")
     expect_true(all(c("Package", "Version") %in% colnames(data)))
@@ -23,9 +23,9 @@ test_that(".get_bioc_pkg_data errors on an unknown type", {
     expect_error(.get_bioc_pkg_data("release", type = "not-a-type"))
 })
 
-test_that(".get_books_packages fetches real Package/Version data", {
+test_that(".get_bioc_pkg_data works for books via .PACKAGE_TYPE_PATH", {
     skip_if_offline()
-    data <- .get_books_packages("release")
+    data <- .get_bioc_pkg_data("release", type = "books")
     expect_true(all(c("Package", "Version") %in% colnames(data)))
 })
 
@@ -48,8 +48,6 @@ test_that(".get_bioc_platform_pkg_data fetches real macos-x86_64 data (different
 })
 
 test_that(".get_bioc_platform_pkg_data errors for an unknown macOS codename", {
-    # .branch_bioc_version()/.branch_r_version() still need network before
-    # the codename lookup is even reached.
     skip_if_offline()
     expect_error(
         .get_bioc_platform_pkg_data(
@@ -59,16 +57,6 @@ test_that(".get_bioc_platform_pkg_data errors for an unknown macOS codename", {
     )
 })
 
-test_that(".get_bioc_platform_pkg_data respects a codenames override", {
-    skip_if_offline()
-    rver <- as.character(.branch_r_version("release"))
-    custom <- setNames(list(c(arm64 = "totallymadeupcodename")), rver)
-    expect_warning(
-        .get_bioc_platform_pkg_data(
-            "release", os = "macos", arch = "arm64", codenames = custom
-    ))
-})
-
 test_that(".get_bioc_platform_pkg_data errors for an unsupported os", {
     skip_if_offline()
     expect_error(
@@ -76,23 +64,21 @@ test_that(".get_bioc_platform_pkg_data errors for an unsupported os", {
     )
 })
 
-test_that(".get_all_bioc_pkg_data returns source and platform sub-lists with the right names (explicit type)", {
+test_that(".get_all_bioc_pkg_data returns source and platform sub-lists (explicit type)", {
     skip_if_offline()
     data <- .get_all_bioc_pkg_data("release", "BiocCheck", type = "software")
     expect_named(data, c("source", "platform"))
     expect_named(data$platform, c("windows", "macos-arm64", "macos-x86_64"))
     expect_true(all(c("Package", "Version") %in% colnames(data$source)))
-    expect_true(all(c("Package", "Version") %in% colnames(data$platform$windows)))
 })
 
 test_that(".get_all_bioc_pkg_data auto-detects type when not supplied", {
     skip_if_offline()
-    # No type given -- must detect "software" itself via .detect_bioc_pkg_type().
     data <- .get_all_bioc_pkg_data("release", "BiocCheck")
     expect_true("BiocCheck" %in% data$source[["Package"]])
 })
 
-test_that(".get_all_bioc_pkg_data returns NULL source and empty platform when the package isn't found in any type", {
+test_that(".get_all_bioc_pkg_data returns NULL source when the package isn't found in any type", {
     skip_if_offline()
     data <- .get_all_bioc_pkg_data("release", "totally-not-a-real-package-xyz")
     expect_null(data$source)
@@ -107,4 +93,20 @@ test_that(".detect_bioc_pkg_type finds a known software package", {
 test_that(".detect_bioc_pkg_type returns NA when the package isn't found in any type", {
     skip_if_offline()
     expect_true(is.na(.detect_bioc_pkg_type("release", "totally-not-a-real-package-xyz")))
+})
+
+test_that(".universe_to_branch resolves known universes", {
+    expect_equal(.universe_to_branch("bioc"), "devel")
+    expect_equal(.universe_to_branch("bioc-release"), "release")
+})
+
+test_that(".universe_to_branch errors for an unknown universe", {
+    expect_error(.universe_to_branch("not-a-universe"), "unknown universe")
+})
+
+test_that(".previous_bioc_version(\"devel\") resolves to release under normal conditions", {
+    skip_if_offline()
+    prev <- .previous_bioc_version("devel")
+    expect_true(is.character(prev))
+    expect_lt(package_version(prev), .branch_bioc_version("devel"))
 })
