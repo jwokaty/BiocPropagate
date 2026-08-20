@@ -1,3 +1,8 @@
+#' Uncached Bioconductor host -- one place to change if it moves (e.g.
+#' "master" naming gets replaced).
+#' @noRd
+.BIOC_BASE_URL <- "https://master.bioconductor.org"
+
 #' Repo-path segment for each Bioconductor package type, matching
 #' `BiocManager::repositories()`'s own naming.
 #' @noRd
@@ -34,7 +39,7 @@
     bioc_ver <- .branch_bioc_version(branch)
     path <- .PACKAGE_TYPE_PATH[[type]]
     contrib_url <- glue::glue(
-        "https://bioconductor.org/packages/{bioc_ver}/{path}/src/contrib"
+        "{.BIOC_BASE_URL}/packages/{bioc_ver}/{path}/src/contrib"
     )
     as.data.frame(
         utils::available.packages(contriburl = contrib_url, filters = list()),
@@ -45,18 +50,23 @@
 #' @noRd
 #' @title Resolve the Bioc version immediately before a branch's
 #'
-#' @details Bioc versions increment y by 1 per release (e.g. 3.23 ->
-#'   3.24); computed arithmetically rather than via
-#'   `BiocManager:::.version_map()`'s row order, which isn't something
-#'   this package has verified.
-#'
 #' @param branch `character(1)` A Bioc status tag or explicit version.
 #'
-#' @return `character(1)`, e.g. `"3.23"` given a branch resolving to
-#'   `"3.24"`.
+#' @return `character(1)`, e.g. `"3.22"` given a branch resolving to
+#'   `"3.23"`.
 .previous_bioc_version <- function(branch) {
     bioc_ver <- .branch_bioc_version(branch)
-    paste(as.integer(bioc_ver[, 1L]), as.integer(bioc_ver[, 2L]) - 1L, sep = ".")
+    config <- yaml::read_yaml(glue::glue("{.BIOC_BASE_URL}/config.yaml"))
+    versions <- sort(package_version(unlist(config[["versions"]])))
+
+    idx <- match(bioc_ver, versions)
+    if (is.na(idx) || idx <= 1L)
+        stop(glue::glue(
+            "no previous Bioc version available in config.yaml's ",
+            "'versions' list for {bioc_ver}"
+        ))
+
+    as.character(versions[idx - 1L])
 }
 
 #' r-universe universe name -> Bioc branch.
@@ -127,7 +137,7 @@
     }
 
     contrib_url <- glue::glue(
-        "https://bioconductor.org/packages/{bioc_ver}/{path}/{bin_path}"
+        "{.BIOC_BASE_URL}/packages/{bioc_ver}/{path}/{bin_path}"
     )
     as.data.frame(
         utils::available.packages(contriburl = contrib_url, filters = list()),
