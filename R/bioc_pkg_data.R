@@ -57,8 +57,11 @@
 .previous_bioc_version <- function(branch) {
     bioc_ver <- .branch_bioc_version(branch)
     config <- yaml::read_yaml(glue::glue("{.BIOC_BASE_URL}/config.yaml"))
-    versions <- sort(package_version(unlist(config[["versions"]])))
-
+    if (branch == "devel")
+        versions <- config$versions
+    else
+        versions <- names(config$release_dates)
+ 
     idx <- match(bioc_ver, versions)
     if (is.na(idx) || idx <= 1L)
         stop(glue::glue(
@@ -84,10 +87,10 @@
 #'
 #' @return `character(1)`, e.g. `"release"`.
 .universe_to_branch <- function(universe, map = .UNIVERSE_BRANCH_MAP) {
-    branch <- map[[universe]]
-    if (is.null(branch))
-        stop(glue::glue("unknown universe '{universe}' -- update .UNIVERSE_BRANCH_MAP"))
-    branch
+    tryCatch(map[[universe]],
+        error = function(e) {
+            stop(glue::glue("unknown universe '{universe}' -- update .UNIVERSE_BRANCH_MAP"))
+    })
 }
 
 #' macOS codename per R version and arch -- R-core's choice of which

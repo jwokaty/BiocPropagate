@@ -2,63 +2,30 @@
 % Please edit documentation in R/propagation.R
 \name{check_propagation}
 \alias{check_propagation}
-\title{Check propagation status for a single package}
+\title{Check propagation status for a package}
 \usage{
-check_propagation(
-  pkgName,
-  branch = "release",
-  criteria = default_criteria(),
-  platforms = .DEFAULT_PLATFORMS,
-  bioc_pkg_data = NULL,
-  bioc_pkg_data_type = NULL,
-  repo_path = NULL
-)
+check_propagation(args)
 }
 \arguments{
-\item{pkgName}{\code{character(1)} Package name.}
-
-\item{branch}{\code{character(1)} A Bioc status tag (\code{"release"}, \code{"devel"})
-or explicit version (e.g. \code{"3.22"}).}
-
-\item{criteria}{A criteria list from \code{\link[=default_criteria]{default_criteria()}} (includes
-\code{\link[=git_criteria]{git_criteria()}}'s gates by default), optionally modified via
-\code{\link[=register_criterion]{register_criterion()}}.}
-
-\item{platforms}{\code{character()} OS-arch strings to check. The result's
-\code{platforms} element is built directly from this argument.}
-
-\item{bioc_pkg_data}{\code{list(source, platform)} -- see
-\code{.get_all_bioc_pkg_data()} -- or \code{NULL} (the default) to fetch it
-internally. A caller that already has this loaded (e.g.
-\code{biocPropagationPipe}) should pass it directly to skip the redundant
-fetch.}
-
-\item{bioc_pkg_data_type}{\code{character(1)} or \code{NULL} (default) to
-auto-detect via \code{.detect_bioc_pkg_type()}. Passed to
-\code{.get_all_bioc_pkg_data()} when \code{bioc_pkg_data} isn't supplied.}
-
-\item{repo_path}{\code{character(1)} or \code{NULL}. An already-cloned repo path.
-If \code{NULL}, cloned internally on first use by a git-based gate, if any
-is registered.}
+\item{args}{A named list:
+\itemize{
+\item \code{package} -- \code{character(1)} package name.
+\item \code{universe} -- \code{character(1)} r-universe universe name
+\item \code{jobs} -- a data.frame with \code{config}, \code{r}, \code{check} columns
+\item \code{source_path} -- \code{character(1)} path to the extracted source
+\item \code{criteria} -- optional; a criteria list from \code{\link[=default_criteria]{default_criteria()}}
+}}
 }
 \value{
-\code{list(package, gates, platforms)}: \code{gates} is \code{logical(1)};
-\code{platforms} is a named list of \code{logical(1)}, one per requested
-platform.
+\code{args$jobs}, with an added \code{deploy} column (\code{logical}) --
+\code{TRUE}/\code{FALSE} per row.
 }
 \description{
-Queries the Bioconductor r-universe API for one package
-and reports, per requested OS-arch platform, whether it meets
-propagation criteria for a given branch. Registered gates (see
-\code{\link[=default_criteria]{default_criteria()}}, \code{\link[=git_criteria]{git_criteria()}}) must all pass or every
-platform is \code{FALSE}. Evaluation is fail-fast (see
-\code{.evaluate_gates()}/\code{.evaluate_platform()}).
-
-The return value is a plain \code{TRUE}/\code{FALSE} grid with no diagnostic.
-Maintainer must check GitHub Action log to diagnose.
-}
-\examples{
-\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
-check_propagation("rtracklayer", branch = "devel")
-\dontshow{\}) # examplesIf}
+Reads a package's \verb{_jobs}-shaped build-check results plus
+its \code{DESCRIPTION} (from \code{source_path} -- no cloning), and annotates
+each job with whether it's safe to propagate; if any gate fails, every
+row gets \code{deploy = FALSE}. Otherwise each row is checked independently
+against Bioconductor's currently-published data for that platform.
+Previously platforms for previously propagated artifact will be FALSE
+on subsequent checks for that version.
 }

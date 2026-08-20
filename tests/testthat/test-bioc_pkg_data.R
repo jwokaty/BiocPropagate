@@ -66,7 +66,7 @@ test_that(".get_bioc_platform_pkg_data errors for an unsupported os", {
 
 test_that(".get_all_bioc_pkg_data returns source and platform sub-lists (explicit type)", {
     skip_if_offline()
-    data <- .get_all_bioc_pkg_data("release", "BiocCheck", type = "software")
+    data <- .get_all_bioc_pkg_data("release", "BiocCheck")
     expect_named(data, c("source", "platform"))
     expect_named(data$platform, c("windows", "macos-arm64", "macos-x86_64"))
     expect_true(all(c("Package", "Version") %in% colnames(data$source)))
@@ -101,12 +101,13 @@ test_that(".universe_to_branch resolves known universes", {
 })
 
 test_that(".universe_to_branch errors for an unknown universe", {
-    expect_error(.universe_to_branch("not-a-universe"), "unknown universe")
+    expect_error(.universe_to_branch("not-a-universe"),
+                 "unknown universe 'not-a-universe' -- update .UNIVERSE_BRANCH_MAP")
 })
 
 test_that(".previous_bioc_version(\"devel\") resolves to release under normal conditions", {
     skip_if_offline()
     prev <- .previous_bioc_version("devel")
     expect_true(is.character(prev))
-    expect_lt(package_version(prev), .branch_bioc_version("devel"))
+    expect_lt(package_version(prev), package_version(.branch_bioc_version("devel")))
 })
