@@ -54,11 +54,14 @@
 #' .parse_job_config("source")
 .parse_job_config <- function(config) {
     if (config %in% c("source", "bioc-checks"))
-        return(list(os = NA_character_, r_channel = NA_character_, arch = NA_character_))
+        return(list(os = NA_character_, r_channel = NA_character_,
+                    arch = NA_character_))
     parts <- strsplit(config, "-", fixed = TRUE)[[1L]]
     if (length(parts) < 3L)
-        return(list(os = NA_character_, r_channel = NA_character_, arch = NA_character_))
-    list(os = parts[1L], r_channel = parts[2L], arch = paste(parts[-(1:2)], collapse = "-"))
+        return(list(os = NA_character_, r_channel = NA_character_,
+                    arch = NA_character_))
+    list(os = parts[1L], r_channel = parts[2L], arch = paste(parts[-(1:2)],
+         collapse = "-"))
 }
 
 #' Config values in `_jobs` that are gate-level checks, not platform
@@ -167,7 +170,8 @@
 #' .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
 .check_version_valid <- function(pkg_data, branch, bioc_pkg_data, source_path) {
     current <- pkg_data[["Version"]]
-    previous <- .lookup_bioc_pkg_version(bioc_pkg_data$source, pkg_data[["Package"]])
+    previous <- .lookup_bioc_pkg_version(bioc_pkg_data$source,
+                                         pkg_data[["Package"]])
 
     if (is.null(current) || is.na(previous))
         return(list(pass = TRUE, message = NA_character_))
@@ -311,7 +315,7 @@
 #' @title Platform check: does propagating this platform actually
 #'   advance its published version?
 #'
-#' @details Strict `>`, `=` fails to prevent the same version of a package
+#' @details Strictly greater to prevent the same version of a package
 #'   os-arch artifact from being propagated more than once. Falls back to
 #'   the previous version if no current artifact found in Bioconductor.
 #'
@@ -345,10 +349,11 @@
     if (!is.na(published)) {
         if (package_version(current) > package_version(published))
             return(list(pass = TRUE, message = NA_character_))
-        return(list(pass = FALSE, message = sprintf(
-            "version %s is not greater than %s already published for %s",
-            current, published, platform
-        )))
+        return(list(pass = FALSE,
+                    message = glue::glue("version {current} is not greater than",
+                                         "{published} already published for",
+                                         "{platform}", .sep = " ")
+        ))
     }
 
     prev_table <- if (!is.null(bioc_pkg_data$previous)) {
@@ -376,10 +381,10 @@
     if (cur_y > prev_y)
         return(list(pass = TRUE, message = NA_character_))
 
-    list(pass = FALSE, message = sprintf(
-        "version %s does not show a valid y-increase over %s (previous branch) for %s",
-        current, prev_published, platform
-    ))
+    list(pass = FALSE, message = glue::glue(
+        "version {current} does not show a valid y-increase over",
+        "{prev_published} (previous branch) for {platform}", .sep = " ")
+    )
 }
 
 #' @noRd

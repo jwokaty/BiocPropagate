@@ -71,13 +71,12 @@
 
 #' @title Check propagation status for a package
 #'
-#' @description Reads a package's `_jobs`-shaped build-check results plus
-#'   its `DESCRIPTION` (from `source_path` -- no cloning), and annotates
-#'   each job with whether it's safe to propagate; if any gate fails, every
-#'   row gets `deploy = FALSE`. Otherwise each row is checked independently
-#'   against Bioconductor's currently-published data for that platform.
-#'   Previously platforms for previously propagated artifact will be FALSE
-#'   on subsequent checks for that version.
+#' @description Reads a package's `_jobs` build-check results plus
+#'   its `DESCRIPTION` from `source_path`, and annotates each job with whether
+#'   it's safe to propagate; if any gate fails, every row gets `deploy = FALSE`.
+#'   Each row is checked independently against Bioconductor's
+#'   currently-published data for that platform. Previously propagated
+#'   artifacts will be FALSE on subsequent checks for that platform-version.
 #'
 #' @param args A named list:
 #'   * `package` -- `character(1)` package name.
@@ -111,7 +110,8 @@ check_propagation <- function(args) {
         rep(FALSE, nrow(jobs))
     } else {
         vapply(seq_len(nrow(jobs)), function(i) {
-            .evaluate_row(criteria[["row"]], pkg_data, branch, bioc_pkg_data, jobs[i, ])
+            .evaluate_row(criteria[["row"]], pkg_data, branch, bioc_pkg_data,
+                          jobs[i, ])
         }, logical(1L))
     }
 

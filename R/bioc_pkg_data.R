@@ -1,7 +1,5 @@
-#' Uncached Bioconductor host -- one place to change if it moves (e.g.
-#' "master" naming gets replaced).
 #' @noRd
-.BIOC_BASE_URL <- "https://master.bioconductor.org"
+.BIOC_BASE_URL <- "https://bioconductor.org"
 
 #' Repo-path segment for each Bioconductor package type, matching
 #' `BiocManager::repositories()`'s own naming.
@@ -18,18 +16,11 @@
 #' @title Fetch current Bioconductor package version data for a branch
 #'   and type
 #'
-#' @details Uses `available.packages()` -- the same mechanism
-#'   `install.packages()`/`BiocManager::install()` use internally to read
-#'   a repository's standard `PACKAGES` index. `filters = list()`
-#'   disables the default R-version-compatibility filtering, which
-#'   otherwise assumes the *running* R session's version rather than the
-#'   branch's paired version we're actually asking about.
-#'
 #' @param branch `character(1)` A Bioc status tag or explicit version.
 #' @param type `character(1)` One of `names(.PACKAGE_TYPE_PATH)`.
 #'
-#' @return A `data.frame` with `Package` and `Version` columns (plus
-#'   whatever else `available.packages()` returns), one row per package.
+#' @return A `data.frame` with `Package` and `Version` columns one, row per
+#'   package.
 #'
 #' @examplesIf curl::has_internet()
 #' pkg_data <- .get_bioc_pkg_data("release")
@@ -89,7 +80,8 @@
 .universe_to_branch <- function(universe, map = .UNIVERSE_BRANCH_MAP) {
     tryCatch(map[[universe]],
         error = function(e) {
-            stop(glue::glue("unknown universe '{universe}' -- update .UNIVERSE_BRANCH_MAP"))
+            stop(glue::glue("unknown universe '{universe}' -- update",
+                            ".UNIVERSE_BRANCH_MAP", .sep = " "))
     })
 }
 
@@ -130,13 +122,11 @@
     } else if (identical(os, "macos")) {
         codename <- codenames[[rver]][[arch]]
         if (is.null(codename))
-            stop(sprintf(
-                "no macOS codename known for R %s/%s -- update .MACOS_CODENAMES",
-                rver, arch
-            ))
+            stop(glue::glue("no macOS codename known for R {rver}/{arch} --",
+                            "update .MACOS_CODENAMES", .sep = " "))
         glue::glue("bin/macosx/{codename}-{arch}/contrib/{rver}")
     } else {
-        stop(sprintf("unsupported os: %s", os))
+        stop(glue::glue("unsupported os: {os}"))
     }
 
     contrib_url <- glue::glue(
@@ -158,7 +148,8 @@
 #'   any of them (e.g. a genuinely new, not-yet-published package).
 .detect_bioc_pkg_type <- function(branch, pkg) {
     for (type in names(.PACKAGE_TYPE_PATH)) {
-        data <- tryCatch(.get_bioc_pkg_data(branch, type), error = function(e) NULL)
+        data <- tryCatch(.get_bioc_pkg_data(branch, type),
+                         error = function(e) NULL)
         if (!is.null(data) && pkg %in% data[["Package"]])
             return(type)
     }
@@ -174,9 +165,8 @@
 #'
 #' @return `list(source = <data.frame>, platform = list(windows = ...,
 #'   "macos-arm64" = ..., "macos-x86_64" = ...))`. If `type` can't be
-#'   detected, `source` is `NULL` and `platform` is empty -- every
-#'   criterion reading this then sees "nothing to compare against",
-#'   handled the same way as a brand-new package already is.
+#'   detected, `source` is `NULL` and `platform` is empty, it is handled the
+#'   same way as a brand-new package.
 .get_all_bioc_pkg_data <- function(branch, pkg) {
     type <- .detect_bioc_pkg_type(branch, pkg)
     if (is.na(type))

@@ -15,7 +15,7 @@
 .version_field_for <- function(field, branch) {
     map <- BiocManager:::.version_map()
     if (identical(map, BiocManager:::.VERSION_MAP_SENTINEL))
-        stop("could not build BiocManager's version map (check network access)")
+        stop("could not build BiocManager's version map")
 
     status_tags <- c("out-of-date", "release", "devel", "future")
     if (branch %in% status_tags)
@@ -24,8 +24,7 @@
         idx <- match(package_version(branch), map[["Bioc"]])
 
     if (is.na(idx))
-        stop(glue::glue("branch '{branch}' not found in BiocManager's ",
-            "version map"))
+        stop(glue::glue("branch '{branch}' not found"))
 
     map[idx, field]
 }
