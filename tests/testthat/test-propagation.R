@@ -54,26 +54,26 @@ test_that(".evaluate_gates is fail-fast", {
     expect_false(ran_second)
 })
 
-test_that(".evaluate_row passes when every criterion passes", {
+test_that(".evaluate_platform passes when every criterion passes", {
     pkg_data <- .example_pkg_data()
-    criteria <- default_criteria()$row
+    criteria <- default_criteria()$platform
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "linux-release-x86_64", ]
-    expect_true(.evaluate_row(criteria, pkg_data, "release", NULL, row))
+    expect_true(.evaluate_platform(criteria, pkg_data, "release", NULL, row))
 })
 
-test_that(".evaluate_row fails and messages when a criterion fails", {
+test_that(".evaluate_platform fails and messages when a criterion fails", {
     pkg_data <- .example_pkg_data()
-    criteria <- default_criteria()$row
+    criteria <- default_criteria()$platform
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "linux-release-x86_64", ]
     row[["check"]] <- "ERROR"
     expect_message(
-        result <- .evaluate_row(criteria, pkg_data, "release", NULL, row),
+        result <- .evaluate_platform(criteria, pkg_data, "release", NULL, row),
         "propagation check failed"
     )
     expect_false(result)
 })
 
-test_that(".evaluate_row catches an error from a criterion", {
+test_that(".evaluate_platform catches an error from a criterion", {
     pkg_data <- .example_pkg_data()
     criteria <- list(
         broken = function(pkg_data, branch, bioc_pkg_data, row)
@@ -81,7 +81,7 @@ test_that(".evaluate_row catches an error from a criterion", {
     )
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "linux-release-x86_64", ]
     expect_message(
-        result <- .evaluate_row(criteria, pkg_data, "release", NULL, row),
+        result <- .evaluate_platform(criteria, pkg_data, "release", NULL, row),
         "something went wrong inside this criterion"
     )
     expect_false(result)
@@ -137,7 +137,7 @@ test_that("check_propagation respects a caller-supplied criteria", {
     always_fail_gate <- list(gates = list(
         always_fail = function(pkg_data, branch, bioc_pkg_data, source_path)
             list(pass = FALSE, message = "forced failure")
-    ), row = default_criteria()$row)
+    ), platform = default_criteria()$platform)
     args <- list(
         package = "totallyNotARealPackageXyz", universe = "bioc-release",
         jobs = jobs, source_path = dir, criteria = always_fail_gate

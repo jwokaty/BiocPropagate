@@ -287,8 +287,8 @@
 #'
 #' @examples
 #' pkg_data <- list(`Config/Bioconductor/UnsupportedPlatforms` = "win")
-#' .check_supported_platform(pkg_data, "release", NULL, "windows-x86_64")
-.check_supported_platform <- function(pkg_data, branch, bioc_pkg_data, platform) {
+#' .is_supported(pkg_data, "release", NULL, "windows-x86_64")
+.is_supported <- function(pkg_data, branch, bioc_pkg_data, platform) {
     desc_field <- "Config/Bioconductor/UnsupportedPlatforms"
     unsupplat <- pkg_data[[desc_field]]
     if (is.null(unsupplat) || is.na(unsupplat) || !nzchar(unsupplat))
@@ -335,8 +335,8 @@
 #'     source = data.frame(Package = "examplePkg", Version = "1.1.0"),
 #'     platform = list(windows = data.frame(Package = "examplePkg", Version = "1.1.0"))
 #' )
-#' .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
-.check_platform_version_valid <- function(pkg_data, branch, bioc_pkg_data, platform) {
+#' .is_valid_version(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
+.is_valid_version <- function(pkg_data, branch, bioc_pkg_data, platform) {
     current <- pkg_data[["Version"]]
     if (is.null(current))
         return(list(pass = TRUE, message = NA_character_))
@@ -392,13 +392,13 @@
 }
 
 #' @noRd
-#' @title Row check: did this specific job pass, at the R version paired
+#' @title Platform check: did this specific job pass, at the R version paired
 #'   with `branch`?
 #'
 #' @param row One row of `_jobs` (`config`, `r`, `check`).
 #'
 #' @return `list(pass = logical(1), message = character(1))`.
-.check_row_status <- function(pkg_data, branch, bioc_pkg_data, row) {
+.check_platform_status <- function(pkg_data, branch, bioc_pkg_data, row) {
     rver <- .branch_r_version(branch)
     if (.major_minor(row[["r"]]) != rver)
         return(list(pass = FALSE, message = glue::glue(
@@ -412,47 +412,47 @@
 }
 
 #' @noRd
-#' @title Row check: is this row's platform NOT declared unsupported?
+#' @title Platform check: is this row's platform NOT declared unsupported?
 #'
 #' @details Derives a canonical `os-arch` string from `row[["config"]]`
-#'   and delegates to `.check_supported_platform()`. Non-platform rows
+#'   and delegates to `.is_supported()`. Non-platform rows
 #'   (`"source"`, `"bioc-checks"`) pass automatically.
-.check_row_supported_platform <- function(pkg_data, branch, bioc_pkg_data, row) {
+.check_supported_platform <- function(pkg_data, branch, bioc_pkg_data, row) {
     p <- .parse_job_config(row[["config"]])
     if (is.na(p$os))
         return(list(pass = TRUE, message = NA_character_))
-    .check_supported_platform(
+    .is_supported(
         pkg_data, branch, bioc_pkg_data, paste(p$os, p$arch, sep = "-")
     )
 }
 
 #' @noRd
-#' @title Row check: does this row's platform show a valid version
+#' @title Platform check: does this row's platform show a valid version
 #'   advance over Bioconductor?
 #'
-#' @details Same derivation as `.check_row_supported_platform()`.
-.check_row_platform_version <- function(pkg_data, branch, bioc_pkg_data, row) {
+#' @details Same derivation as `.check_supported_platform()`.
+.check_platform_version <- function(pkg_data, branch, bioc_pkg_data, row) {
     p <- .parse_job_config(row[["config"]])
     if (is.na(p$os))
         return(list(pass = TRUE, message = NA_character_))
-    .check_platform_version_valid(
+    .is_valid_version(
         pkg_data, branch, bioc_pkg_data, paste(p$os, p$arch, sep = "-")
     )
 }
 
 #' @title Default propagation criteria
 #'
-#' @description The default gate and row criteria used by
+#' @description The default gate and platform criteria used by
 #'   [check_propagation()]. Copy and modify the returned list (via
 #'   [register_criterion()]) to add, remove, or override criteria.
 #'
-#' @return A list with two elements, `gates` and `row`, each a named
+#' @return A list with two elements, `gates` and `platform`, each a named
 #'   list of criterion functions.
 #'
 #' @examples
 #' criteria <- default_criteria()
 #' names(criteria$gates)
-#' names(criteria$row)
+#' names(criteria$platform)
 #'
 #' @export
 default_criteria <- function() {
@@ -461,10 +461,10 @@ default_criteria <- function() {
             vignettes = .check_vignettes,
             version   = .check_version_valid
         ),
-        row = list(
-            status           = .check_row_status,
-            unsupported      = .check_row_supported_platform,
-            platform_version = .check_row_platform_version
+        platform = list(
+            status           = .check_platform_status,
+            unsupported      = .check_supported_platform,
+            platform_version = .check_platform_version
         )
     )
     criteria$gates <- c(criteria$gates, source_criteria()$gates)
@@ -480,8 +480,8 @@ default_criteria <- function() {
 #' @param fun A function returning `list(pass = logical(1), message =
 #'   character(1))`. For `type = "gates"`:
 #'   `function(pkg_data, branch, bioc_pkg_data, source_path)`. For
-#'   `type = "row"`: `function(pkg_data, branch, bioc_pkg_data, row)`.
-#' @param type `character(1)` Either `"gates"` or `"row"`.
+#'   `type = "platform"`: `function(pkg_data, branch, bioc_pkg_data, row)`.
+#' @param type `character(1)` Either `"gates"` or `"platform"`.
 #'
 #' @return The updated criteria list.
 #'
@@ -496,7 +496,7 @@ default_criteria <- function() {
 #' names(criteria$gates)
 #'
 #' @export
-register_criterion <- function(criteria, name, fun, type = c("gates", "row")) {
+register_criterion <- function(criteria, name, fun, type = c("gates", "platform")) {
     type <- match.arg(type)
     criteria[[type]][[name]] <- fun
     criteria
@@ -539,9 +539,7 @@ unregister_gates <- function(criteria, gates) {
 #' @returns list of remaining criteria
 #'
 #' @examples
-#' remove_criteria("BiocCheck","devel", default_criteria())
-#'
-#' @export
+#' remote_criteria("BiocCheck","devel", default_criteria())
 remove_criteria <- function(package, branch, criteria,
                             manifest = .BIOCONDUCTOR_MANIFEST) {
     exemptions <- .get_exemptions(package, branch, manifest = manifest)

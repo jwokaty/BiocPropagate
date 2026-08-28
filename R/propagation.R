@@ -47,16 +47,16 @@
 }
 
 #' @noRd
-#' @title Run row criteria for one `_jobs` row, stopping at the first
+#' @title Run platform criteria for one `_jobs` row, stopping at the first
 #'   failure
 #'
-#' @param criteria Named list of row-criterion functions (see
+#' @param criteria Named list of platform-criterion functions (see
 #'   criteria.R).
 #' @param pkg_data,branch,bioc_pkg_data Passed through to each criterion.
 #' @param row One row of `_jobs`.
 #'
 #' @return `logical(1)` -- TRUE only if every criterion passed.
-.evaluate_row <- function(criteria, pkg_data, branch, bioc_pkg_data, row) {
+.evaluate_platform <- function(criteria, pkg_data, branch, bioc_pkg_data, row) {
     for (name in names(criteria)) {
         result <- tryCatch(
             criteria[[name]](pkg_data, branch, bioc_pkg_data, row),
@@ -98,7 +98,7 @@ check_propagation <- function(args) {
     if (is.null(criteria))
         criteria <- default_criteria()
     branch <- .universe_to_branch(universe)
-    # criteria <- remove_criteria(package, branch, criteria)
+    # criteria <- .remove_criteria(package, branch, criteria)
     pkg_data <- as.list(read.dcf(file.path(source_path, "DESCRIPTION"))[1, ])
     pkg_data[["_jobs"]] <- jobs
     bioc_pkg_data <- .get_all_bioc_pkg_data(branch, package)
@@ -111,7 +111,7 @@ check_propagation <- function(args) {
         rep(FALSE, nrow(jobs))
     } else {
         vapply(seq_len(nrow(jobs)), function(i) {
-            .evaluate_row(criteria[["row"]], pkg_data, branch, bioc_pkg_data,
+            .evaluate_platform(criteria[["platform"]], pkg_data, branch, bioc_pkg_data,
                           jobs[i, ])
         }, logical(1L))
     }

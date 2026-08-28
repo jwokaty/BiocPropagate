@@ -180,67 +180,67 @@ test_that(".parse_unsupported_entry handles OS-only and OS-arch entries", {
     )
 })
 
-test_that(".check_supported_platform passes when nothing is declared unsupported", {
+test_that(".is_supported passes when nothing is declared unsupported", {
     pkg_data <- list(`Config/Bioconductor/UnsupportedPlatforms` = NULL)
-    result <- .check_supported_platform(pkg_data, "release", NULL, "windows-x86_64")
+    result <- .is_supported(pkg_data, "release", NULL, "windows-x86_64")
     expect_true(result$pass)
 })
 
-test_that(".check_supported_platform fails for an OS-only unsupported declaration", {
+test_that(".is_supported fails for an OS-only unsupported declaration", {
     pkg_data <- list(`Config/Bioconductor/UnsupportedPlatforms` = "win")
-    result <- .check_supported_platform(pkg_data, "release", NULL, "windows-x86_64")
+    result <- .is_supported(pkg_data, "release", NULL, "windows-x86_64")
     expect_false(result$pass)
 })
 
-test_that(".check_supported_platform never fails for linux", {
+test_that(".is_supported never fails for linux", {
     pkg_data <- list(`Config/Bioconductor/UnsupportedPlatforms` = "linux")
-    result <- .check_supported_platform(pkg_data, "release", NULL, "linux-x86_64")
+    result <- .is_supported(pkg_data, "release", NULL, "linux-x86_64")
     expect_true(result$pass)
 })
 
-test_that(".check_platform_version_valid passes windows when current exceeds the shared windows version", {
+test_that(".is_valid_version passes windows when current exceeds the shared windows version", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(
         source = data.frame(Package = "examplePkg", Version = "1.1.0"),
         platform = list(windows = data.frame(Package = "examplePkg", Version = "1.1.0"))
     )
-    result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
+    result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
     expect_true(result$pass)
 })
 
-test_that(".check_platform_version_valid fails windows when current equals the published version", {
+test_that(".is_valid_version fails windows when current equals the published version", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(
         source = data.frame(Package = "examplePkg", Version = "1.2.0"),
         platform = list(windows = data.frame(Package = "examplePkg", Version = "1.2.0"))
     )
-    result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
+    result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
     expect_false(result$pass)
 })
 
-test_that(".check_platform_version_valid fails windows when current is behind the published version", {
+test_that(".is_valid_version fails windows when current is behind the published version", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(
         source = data.frame(Package = "examplePkg", Version = "1.9.0"),
         platform = list(windows = data.frame(Package = "examplePkg", Version = "1.9.0"))
     )
-    result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
+    result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
     expect_false(result$pass)
 })
 
-test_that(".check_platform_version_valid uses the same windows entry for both arches", {
+test_that(".is_valid_version uses the same windows entry for both arches", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(
         source = data.frame(Package = "examplePkg", Version = "1.1.0"),
         platform = list(windows = data.frame(Package = "examplePkg", Version = "1.1.0"))
     )
-    r1 <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "windows-arm64")
-    r2 <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
+    r1 <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "windows-arm64")
+    r2 <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "windows-x86_64")
     expect_true(r1$pass)
     expect_true(r2$pass)
 })
 
-test_that(".check_platform_version_valid uses macos-arm64's own entry, distinct from macos-x86_64", {
+test_that(".is_valid_version uses macos-arm64's own entry, distinct from macos-x86_64", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(
         source = data.frame(Package = "examplePkg", Version = "1.0.0"),
@@ -249,121 +249,121 @@ test_that(".check_platform_version_valid uses macos-arm64's own entry, distinct 
             "macos-x86_64" = data.frame(Package = "examplePkg", Version = "1.9.0")
         )
     )
-    arm_result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "macos-arm64")
-    x86_result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "macos-x86_64")
+    arm_result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "macos-arm64")
+    x86_result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "macos-x86_64")
     expect_true(arm_result$pass)
     expect_false(x86_result$pass)
 })
 
-test_that(".check_platform_version_valid falls back to source data for linux", {
+test_that(".is_valid_version falls back to source data for linux", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(
         source = data.frame(Package = "examplePkg", Version = "1.1.0"),
         platform = list()
     )
-    result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "linux-x86_64")
+    result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "linux-x86_64")
     expect_true(result$pass)
 })
 
-test_that(".check_platform_version_valid falls back to previous-branch data when current branch has none", {
+test_that(".is_valid_version falls back to previous-branch data when current branch has none", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0", y = 2
     bioc_pkg_data <- list(
         source = data.frame(Package = "otherPkg", Version = "9.9.9"),
         platform = list(),
         previous = list(source = data.frame(Package = "examplePkg", Version = "1.1.0"))
     )
-    result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "linux-x86_64")
+    result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "linux-x86_64")
     expect_true(result$pass)
 })
 
-test_that(".check_platform_version_valid fails the fallback when y did not increase", {
+test_that(".is_valid_version fails the fallback when y did not increase", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0", y = 2
     bioc_pkg_data <- list(
         source = data.frame(Package = "otherPkg", Version = "9.9.9"),
         platform = list(),
         previous = list(source = data.frame(Package = "examplePkg", Version = "1.5.0"))
     )
-    result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "linux-x86_64")
+    result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "linux-x86_64")
     expect_false(result$pass)
     expect_match(result$message, "y-increase")
 })
 
-test_that(".check_platform_version_valid passes vacuously when neither branch has an entry", {
+test_that(".is_valid_version passes vacuously when neither branch has an entry", {
     pkg_data <- .example_pkg_data()
     bioc_pkg_data <- list(
         source = data.frame(Package = "otherPkg", Version = "9.9.9"),
         platform = list(),
         previous = list(source = data.frame(Package = "otherPkg", Version = "9.9.9"))
     )
-    result <- .check_platform_version_valid(pkg_data, "release", bioc_pkg_data, "linux-x86_64")
+    result <- .is_valid_version(pkg_data, "release", bioc_pkg_data, "linux-x86_64")
     expect_true(result$pass)
 })
 
-test_that(".check_row_status passes for a matching, passing row", {
+test_that(".check_platform_status passes for a matching, passing row", {
     pkg_data <- .example_pkg_data()
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "linux-release-x86_64", ]
-    result <- .check_row_status(pkg_data, "release", NULL, row)
+    result <- .check_platform_status(pkg_data, "release", NULL, row)
     expect_true(result$pass)
 })
 
-test_that(".check_row_status fails when the row's R version doesn't match the branch", {
+test_that(".check_platform_status fails when the row's R version doesn't match the branch", {
     pkg_data <- .example_pkg_data()
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "linux-release-x86_64", ]
     row[["r"]] <- "1.2.3"
-    result <- .check_row_status(pkg_data, "release", NULL, row)
+    result <- .check_platform_status(pkg_data, "release", NULL, row)
     expect_false(result$pass)
     expect_match(result$message, "does not match")
 })
 
-test_that(".check_row_status fails for a failing check status", {
+test_that(".check_platform_status fails for a failing check status", {
     pkg_data <- .example_pkg_data()
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "linux-release-x86_64", ]
     row[["check"]] <- "ERROR"
-    result <- .check_row_status(pkg_data, "release", NULL, row)
+    result <- .check_platform_status(pkg_data, "release", NULL, row)
     expect_false(result$pass)
 })
 
-test_that(".check_row_supported_platform passes automatically for non-platform rows", {
+test_that(".check_supported_platform passes automatically for non-platform rows", {
     pkg_data <- .example_pkg_data()
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "source", ]
-    result <- .check_row_supported_platform(pkg_data, "release", NULL, row)
+    result <- .check_supported_platform(pkg_data, "release", NULL, row)
     expect_true(result$pass)
 })
 
-test_that(".check_row_supported_platform derives os-arch and delegates correctly", {
+test_that(".check_supported_platform derives os-arch and delegates correctly", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Config/Bioconductor/UnsupportedPlatforms"]] <- "win"
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "windows-release-x86_64", ]
-    result <- .check_row_supported_platform(pkg_data, "release", NULL, row)
+    result <- .check_supported_platform(pkg_data, "release", NULL, row)
     expect_false(result$pass)
 })
 
-test_that(".check_row_platform_version passes automatically for non-platform rows", {
+test_that(".check_platform_version passes automatically for non-platform rows", {
     pkg_data <- .example_pkg_data()
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "bioc-checks", ]
-    result <- .check_row_platform_version(pkg_data, "release", NULL, row)
+    result <- .check_platform_version(pkg_data, "release", NULL, row)
     expect_true(result$pass)
 })
 
-test_that(".check_row_platform_version derives os-arch and delegates correctly", {
+test_that(".check_platform_version derives os-arch and delegates correctly", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(
         source = data.frame(Package = "examplePkg", Version = "9.9.9"),
         platform = list(windows = data.frame(Package = "examplePkg", Version = "9.9.9"))
     )
     row <- pkg_data[["_jobs"]][pkg_data[["_jobs"]][["config"]] == "windows-release-x86_64", ]
-    result <- .check_row_platform_version(pkg_data, "release", bioc_pkg_data, row)
+    result <- .check_platform_version(pkg_data, "release", bioc_pkg_data, row)
     expect_false(result$pass)
 })
 
 test_that("default_criteria returns the expected gate and row names", {
     criteria <- default_criteria()
-    expect_named(criteria, c("gates", "row"))
+    expect_named(criteria, c("gates", "platform"))
     expect_setequal(names(criteria$gates), c(
         "vignettes", "version",
         "no_large_files", "no_remotes", "no_secrets", "no_merge_conflicts"
     ))
-    expect_setequal(names(criteria$row), c("status", "unsupported", "platform_version"))
+    expect_setequal(names(criteria$platform), c("status", "unsupported", "platform_version"))
 })
 
 test_that("default_criteria's source gates can be removed", {
@@ -393,8 +393,8 @@ test_that("register_criterion works for row-type criteria too", {
     criteria <- default_criteria()
     always_fail <- function(pkg_data, branch, bioc_pkg_data, row)
         list(pass = FALSE, message = "nope")
-    criteria <- register_criterion(criteria, "status", always_fail, type = "row")
-    expect_false(criteria$row$status(list(), "release", NULL, data.frame())$pass)
+    criteria <- register_criterion(criteria, "status", always_fail, type = "platform")
+    expect_false(criteria$platform$status(list(), "release", NULL, data.frame())$pass)
 })
 
 test_that("unregister_gates removes gates from list", {
