@@ -7,17 +7,17 @@
 default_criteria()
 }
 \value{
-A list with two elements, \code{gates} and \code{row}, each a named
+A list with two elements, \code{gates} and \code{platform}, each a named
 list of criterion functions.
 }
 \description{
-The default gate and row criteria used by
+The default gate and platform criteria used by
 \code{\link[=check_propagation]{check_propagation()}}. Copy and modify the returned list (via
 \code{\link[=register_criterion]{register_criterion()}}) to add, remove, or override criteria.
 }
 \examples{
 criteria <- default_criteria()
 names(criteria$gates)
-names(criteria$row)
+names(criteria$platform)
 
 }

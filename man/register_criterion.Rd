@@ -4,7 +4,7 @@
 \alias{register_criterion}
 \title{Register propagation criterion}
 \usage{
-register_criterion(criteria, name, fun, type = c("gates", "row"))
+register_criterion(criteria, name, fun, type = c("gates", "platform"))
 }
 \arguments{
 \item{criteria}{A criteria list, e.g. from \code{\link[=default_criteria]{default_criteria()}}.}
@@ -13,9 +13,9 @@ register_criterion(criteria, name, fun, type = c("gates", "row"))
 
 \item{fun}{A function returning \code{list(pass = logical(1), message = character(1))}. For \code{type = "gates"}:
 \verb{function(pkg_data, branch, bioc_pkg_data, source_path)}. For
-\code{type = "row"}: \verb{function(pkg_data, branch, bioc_pkg_data, row)}.}
+\code{type = "platform"}: \verb{function(pkg_data, branch, bioc_pkg_data, row)}.}
 
-\item{type}{\code{character(1)} Either \code{"gates"} or \code{"row"}.}
+\item{type}{\code{character(1)} Either \code{"gates"} or \code{"platform"}.}
 }
 \value{
 The updated criteria list.

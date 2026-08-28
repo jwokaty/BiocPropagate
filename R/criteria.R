@@ -171,8 +171,8 @@
 #' pkg_data[["Version"]] <- "1.2.5"
 #' source_data <- data.frame(Package = "examplePkg", Version = "1.2.0")
 #' bioc_pkg_data <- list(source = source_data)
-#' .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
-.check_version_valid <- function(pkg_data, branch, bioc_pkg_data, source_path) {
+#' .check_package_version(pkg_data, "release", bioc_pkg_data, NULL)
+.check_package_version <- function(pkg_data, branch, bioc_pkg_data, source_path) {
     current <- pkg_data[["Version"]]
     previous <- .lookup_bioc_pkg_version(bioc_pkg_data$source,
                                          pkg_data[["Package"]])
@@ -459,7 +459,7 @@ default_criteria <- function() {
     criteria <- list(
         gates = list(
             vignettes = .check_vignettes,
-            version   = .check_version_valid
+            package_version = .check_package_version
         ),
         platform = list(
             status           = .check_platform_status,

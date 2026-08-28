@@ -59,110 +59,110 @@ test_that(".check_bioc_checks fails when the job's R version doesn't match the b
     expect_false(result$pass)
 })
 
-test_that(".check_version_valid passes when bioc_pkg_data has no prior version", {
+test_that(".check_package_version passes when bioc_pkg_data has no prior version", {
     pkg_data <- .example_pkg_data()
-    result <- .check_version_valid(pkg_data, "release", NULL, NULL)
+    result <- .check_package_version(pkg_data, "release", NULL, NULL)
     expect_true(result$pass)
 })
 
-test_that(".check_version_valid passes for a same-x.y z-increment", {
+test_that(".check_package_version passes for a same-x.y z-increment", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "1.2.5"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.2.0"))
-    result <- .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "release", bioc_pkg_data, NULL)
     expect_true(result$pass)
 })
 
-test_that(".check_version_valid fails for an invalid decrement", {
+test_that(".check_package_version fails for an invalid decrement", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "2.0.0"))
-    result <- .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "release", bioc_pkg_data, NULL)
     expect_false(result$pass)
 })
 
-test_that(".check_version_valid fails when the version is unchanged", {
+test_that(".check_package_version fails when the version is unchanged", {
     pkg_data <- .example_pkg_data()  # Version "1.2.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.2.0"))
-    result <- .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "release", bioc_pkg_data, NULL)
     expect_false(result$pass)
 })
 
-test_that(".check_version_valid fails for a maintainer-driven y-bump (1.4.3 -> 1.5.0)", {
+test_that(".check_package_version fails for a maintainer-driven y-bump (1.4.3 -> 1.5.0)", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "1.5.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.4.3"))
-    result <- .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "release", bioc_pkg_data, NULL)
     expect_false(result$pass)
 })
 
-test_that(".check_version_valid fails for a maintainer-driven major bump (1.4.3 -> 2.0.0)", {
+test_that(".check_package_version fails for a maintainer-driven major bump (1.4.3 -> 2.0.0)", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "2.0.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.4.3"))
-    result <- .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "release", bioc_pkg_data, NULL)
     expect_false(result$pass)
 })
 
-test_that(".check_version_valid passes for a large z-skip within the same x.y", {
+test_that(".check_package_version passes for a large z-skip within the same x.y", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "1.2.50"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.2.0"))
-    result <- .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "release", bioc_pkg_data, NULL)
     expect_true(result$pass)
 })
 
-test_that(".check_version_valid passes a release y/x-bump when bioc_pkg_data is NULL", {
+test_that(".check_package_version passes a release y/x-bump when bioc_pkg_data is NULL", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "1.5.0"
-    result <- .check_version_valid(pkg_data, "release", NULL, NULL)
+    result <- .check_package_version(pkg_data, "release", NULL, NULL)
     expect_true(result$pass)
 })
 
-test_that(".check_version_valid (devel) passes the release-cycle y+2 bump", {
+test_that(".check_package_version (devel) passes the release-cycle y+2 bump", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "1.5.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.3.7"))
-    result <- .check_version_valid(pkg_data, "devel", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "devel", bioc_pkg_data, NULL)
     expect_true(result$pass)
 })
 
-test_that(".check_version_valid (devel) fails a y-bump by the wrong amount", {
+test_that(".check_package_version (devel) fails a y-bump by the wrong amount", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "1.4.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.3.7"))
-    result <- .check_version_valid(pkg_data, "devel", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "devel", bioc_pkg_data, NULL)
     expect_false(result$pass)
 })
 
-test_that(".check_version_valid (devel) passes the maintainer's y=99 signal", {
+test_that(".check_package_version (devel) passes the maintainer's y=99 signal", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "1.99.3"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.5.12"))
-    result <- .check_version_valid(pkg_data, "devel", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "devel", bioc_pkg_data, NULL)
     expect_true(result$pass)
 })
 
-test_that(".check_version_valid (release) rejects the y=99 signal", {
+test_that(".check_package_version (release) rejects the y=99 signal", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "1.99.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.4.3"))
-    result <- .check_version_valid(pkg_data, "release", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "release", bioc_pkg_data, NULL)
     expect_false(result$pass)
 })
 
-test_that(".check_version_valid (devel) passes the major cutover when previous y was 99", {
+test_that(".check_package_version (devel) passes the major cutover when previous y was 99", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "2.1.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.99.5"))
-    result <- .check_version_valid(pkg_data, "devel", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "devel", bioc_pkg_data, NULL)
     expect_true(result$pass)
 })
 
-test_that(".check_version_valid (devel) rejects a major-cutover-shaped bump when previous y wasn't 99", {
+test_that(".check_package_version (devel) rejects a major-cutover-shaped bump when previous y wasn't 99", {
     pkg_data <- .example_pkg_data()
     pkg_data[["Version"]] <- "2.1.0"
     bioc_pkg_data <- list(source = data.frame(Package = "examplePkg", Version = "1.5.12"))
-    result <- .check_version_valid(pkg_data, "devel", bioc_pkg_data, NULL)
+    result <- .check_package_version(pkg_data, "devel", bioc_pkg_data, NULL)
     expect_false(result$pass)
 })
 
@@ -360,7 +360,7 @@ test_that("default_criteria returns the expected gate and row names", {
     criteria <- default_criteria()
     expect_named(criteria, c("gates", "platform"))
     expect_setequal(names(criteria$gates), c(
-        "vignettes", "version",
+        "vignettes", "package_version",
         "no_large_files", "no_remotes", "no_secrets", "no_merge_conflicts"
     ))
     expect_setequal(names(criteria$platform), c("status", "unsupported", "platform_version"))
@@ -369,7 +369,7 @@ test_that("default_criteria returns the expected gate and row names", {
 test_that("default_criteria's source gates can be removed", {
     criteria <- default_criteria()
     criteria$gates[names(source_criteria()$gates)] <- NULL
-    expect_setequal(names(criteria$gates), c("vignettes", "version"))
+    expect_setequal(names(criteria$gates), c("vignettes", "package_version"))
 })
 
 test_that("register_criterion adds a new gate without disturbing existing ones", {
