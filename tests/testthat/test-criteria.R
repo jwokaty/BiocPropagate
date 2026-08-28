@@ -396,3 +396,43 @@ test_that("register_criterion works for row-type criteria too", {
     criteria <- register_criterion(criteria, "status", always_fail, type = "row")
     expect_false(criteria$row$status(list(), "release", NULL, data.frame())$pass)
 })
+
+test_that("unregister_gates removes gates from list", {
+    criteria <- default_criteria()
+    criteria$gates[c("no_large_files", "no_remotes")] <- NULL
+    expect_equal(criteria,
+                 unregister_gates(default_criteria(),
+                                  c("no_large_files", "no_remotes")))
+})
+
+test_that("unregister_gates removes nothing if gates do not exist", {
+    criteria <- default_criteria()
+    criteria$gates[c("nonexistant_gate")] <- NULL
+    expect_equal(criteria,
+                 unregister_gates(default_criteria(), c("nonexistant_gate")))
+})
+
+test_that("unregister_gates removes given gates", {
+    criteria <- default_criteria()
+    criteria$gates[c("no_large_files", "no_remotes")] <- NULL
+    expect_equal(criteria,
+                 unregister_gates(default_criteria(),
+                                  c("no_large_files", "no_remotes")))
+})
+
+manifest <- "http://github.com/jwokaty/manifest"
+
+test_that("remove_criteria removes criteria if package is exempt", {
+    criteria <- default_criteria()
+    criteria$gates[c("no_large_files", "no_secrets", "no_merge_conflicts")] <- NULL
+    expect_equal(criteria,
+                 remove_criteria("package1", "devel", default_criteria(),
+                                 manifest))
+})
+
+test_that("remove_criteria removes no criteria if no exemptions", {
+    criteria <- default_criteria()
+    expect_equal(criteria,
+                 remove_criteria("package3", "devel", default_criteria(),
+                                 manifest))
+})

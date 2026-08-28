@@ -98,6 +98,7 @@ check_propagation <- function(args) {
     if (is.null(criteria))
         criteria <- default_criteria()
     branch <- .universe_to_branch(universe)
+    # criteria <- remove_criteria(package, branch, criteria)
     pkg_data <- as.list(read.dcf(file.path(source_path, "DESCRIPTION"))[1, ])
     pkg_data[["_jobs"]] <- jobs
     bioc_pkg_data <- .get_all_bioc_pkg_data(branch, package)

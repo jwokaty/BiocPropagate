@@ -1,3 +1,7 @@
+#' manifest
+#' @noRd
+.BIOCONDUCTOR_MANIFEST <- "git@git.bioconductor.org:admin/manifest"
+
 #' Build/check statuses that count as passing. Only ERROR/FAIL/CANCELLED
 #' are failures.
 #' @noRd
@@ -470,12 +474,9 @@ default_criteria <- function() {
 #' @title Register propagation criterion
 #'
 #' @description Add or replace a named criterion in a criteria list,
-#'   without needing to know [default_criteria()]'s internal structure --
-#'   the hook point for propagation policy that changes over time.
 #'
 #' @param criteria A criteria list, e.g. from [default_criteria()].
-#' @param name `character(1)` Criterion name (replaces an existing one
-#'   with the same name and `type`).
+#' @param name `character(1)` Criterion name.
 #' @param fun A function returning `list(pass = logical(1), message =
 #'   character(1))`. For `type = "gates"`:
 #'   `function(pkg_data, branch, bioc_pkg_data, source_path)`. For
@@ -499,4 +500,51 @@ register_criterion <- function(criteria, name, fun, type = c("gates", "row")) {
     type <- match.arg(type)
     criteria[[type]][[name]] <- fun
     criteria
+}
+
+#' @title Unregister gate criteria
+#'
+#' @description Remove a named gate criterion in a criteria list,
+#'
+#' @param criteria A criteria list, e.g. from [default_criteria()].
+#' @param gates `character()` Names for removal in criteria.
+#'
+#' @return The updated criteria list.
+#'
+#' @examples
+#' criteria <- default_criteria()
+#' criteria <- unregister_gates(
+#'     criteria, "no_large_files",
+#' )
+#' names(criteria$gates)
+#'
+#' @export
+unregister_gates <- function(criteria, gates) {
+    criteria$gates[gates] <- NULL
+    criteria
+}
+
+#' Remove gate criteria the package is exempt from
+#'
+#' @details Expects exemptions in the Bioconductor manifest repository
+#' in a DCF-formated exemptions.txt file. A package with exemptions has
+#' Package and Exemptions entries. The Exemptions field is a comma-separated
+#' list of gate names, such as in `source_criteria()`.
+#'  
+#' @param package name
+#' @param branch Bioconductor git branch
+#' @param criteria list()
+#' @param manifest (defaults to .BIOCONDUCTOR_MANIFEST) path to repository
+#'
+#' @returns list of remaining criteria
+#'
+#' @examples
+#' remote_criteria("BiocCheck","devel", default_criteria())
+remove_criteria <- function(package, branch, criteria,
+                            manifest = .BIOCONDUCTOR_MANIFEST) {
+    exemptions <- .get_exemptions(package, branch, manifest = manifest)
+    if (length(exemptions) != 0)
+        unregister_gates(criteria, exemptions)
+    else
+        criteria
 }

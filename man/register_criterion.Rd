@@ -9,8 +9,7 @@ register_criterion(criteria, name, fun, type = c("gates", "row"))
 \arguments{
 \item{criteria}{A criteria list, e.g. from \code{\link[=default_criteria]{default_criteria()}}.}
 
-\item{name}{\code{character(1)} Criterion name (replaces an existing one
-with the same name and \code{type}).}
+\item{name}{\code{character(1)} Criterion name.}
 
 \item{fun}{A function returning \code{list(pass = logical(1), message = character(1))}. For \code{type = "gates"}:
 \verb{function(pkg_data, branch, bioc_pkg_data, source_path)}. For
@@ -23,8 +22,6 @@ The updated criteria list.
 }
 \description{
 Add or replace a named criterion in a criteria list,
-without needing to know \code{\link[=default_criteria]{default_criteria()}}'s internal structure --
-the hook point for propagation policy that changes over time.
 }
 \examples{
 criteria <- default_criteria()
