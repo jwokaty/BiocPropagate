@@ -28,5 +28,8 @@ Package and Exemptions entries. The Exemptions field is a comma-separated
 list of gate names, such as in \code{source_criteria()}.
 }
 \examples{
-remote_criteria("BiocCheck","devel", default_criteria())
+\dontrun{
+remove_criteria("BiocCheck","devel", default_criteria())
+}
+
 }

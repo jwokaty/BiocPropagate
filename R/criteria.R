@@ -514,7 +514,7 @@ register_criterion <- function(criteria, name, fun, type = c("gates", "platform"
 #' @examples
 #' criteria <- default_criteria()
 #' criteria <- unregister_gates(
-#'     criteria, "no_large_files",
+#'     criteria, "no_large_files"
 #' )
 #' names(criteria$gates)
 #'
@@ -539,7 +539,11 @@ unregister_gates <- function(criteria, gates) {
 #' @returns list of remaining criteria
 #'
 #' @examples
-#' remote_criteria("BiocCheck","devel", default_criteria())
+#' \dontrun{
+#' remove_criteria("BiocCheck","devel", default_criteria())
+#' }
+#'
+#' @export
 remove_criteria <- function(package, branch, criteria,
                             manifest = .BIOCONDUCTOR_MANIFEST) {
     exemptions <- .get_exemptions(package, branch, manifest = manifest)

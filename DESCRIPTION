@@ -11,11 +11,13 @@ Description: Provides tools for validating Bioconductor packages through the
 License: Artistic-2.0
 Depends: R (>= 4.6.0)
 Imports:
+    base64enc,
     BiocManager,
     BiocBaseUtils,
     glue,
     jsonlite,
-    rjsoncons
+    rjsoncons,
+    yaml
 Suggests:
     BiocStyle,
     curl,

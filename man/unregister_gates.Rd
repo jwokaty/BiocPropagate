@@ -20,7 +20,7 @@ Remove a named gate criterion in a criteria list,
 \examples{
 criteria <- default_criteria()
 criteria <- unregister_gates(
-    criteria, "no_large_files",
+    criteria, "no_large_files"
 )
 names(criteria$gates)
 

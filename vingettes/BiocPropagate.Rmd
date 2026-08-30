@@ -1,5 +1,5 @@
 ---
-title: "Propagation Checks"
+title: "BiocPropagate"
 output: BiocStyle::html_document
 vignette: >
   %\VignetteIndexEntry{Propagation Checks}
@@ -7,110 +7,129 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-## What propagation means here
+The purpose of this package is to consolidate propagation decisions given
+the package build results in R Universe and Bioconductor propagation criteria.
 
-A package **propagates** when it moves from r-universe's build into
-Bioconductor's official repository. `check_propagation()` decides, per OS-arch
-platform, whether that's currently safe to do.
+## Checking propagation
 
-Two entry points:
+`check_propagation(args)` where `args` is a named list passing
 
-| Function | Data source | Use when |
+| Element | Required | Description |
 |---|---|---|
-| `check_propagation()` | Fetches everything live (r-universe API + Bioconductor's published data) | Normal use |
-| `check_propagation_from_results()` | You supply `pkg_data` yourself | Running inside the same CI job that built the package, before r-universe's API reflects this run |
+| `package` | x | Package name |
+| `universe` | x | r-universe universe name |
+| `jobs` | x | A data.frame of r-universe job data |
+| `source_path` | x | Path to the extracted source package |
+| `criteria` | | A criteria list, defaults to `default_criteria()` |
 
-## The two-stage flow
+The `universe` determines the Bioconductor branch internally. Bioconductor's
+published package data is always fetched live.
+
+## Design
+
+The package has a default set of propagation criteria but can allow additional
+criteria to be specified or excluded. There are two types of criteria operating
+at different levels. Unlike platform criteria, such as `platform_status` that
+independently evaluate the `R CMD check` result of the package on a platform,
+gate criteria, such as `valid_version` or `no_remotes`, check for package-level
+problems that render the propagation as `FALSE` for all platforms.
 
 ```
-                    ┌───────────────────────────┐
-                    │           GATES            │
-                    │   (once, package-level)    │
-                    │                             │
-                    │  vignettes   (source job)  │
-                    │  version     (bump valid?) │
-                    │  git checks  (large files, │
-                    │   secrets, LFS, remotes...)│
-                    └──────────────┬──────────────┘
-                                   │
-                     any gate fails?
-                                   │
-                          ┌────────┴────────┐
-                          │                 │
-                         yes                no
-                          │                 │
-                          ▼                 ▼
-              every platform = FALSE   evaluate each requested
-              (no platform checks run)  platform independently:
-
-                                    ┌─────────────────────────────┐
-                                    │  build             (_jobs)   │
-                                    │  binary        (_binaries)   │
-                                    │  unsupported  (declared?)    │
-                                    │  platform_version (bump vs.  │
-                                    │    Bioconductor's published) │
-                                    │                              │
-                                    │  all 4 pass -> platform TRUE │
-                                    └─────────────────────────────┘
+GATES (once, package-level)
+  vignettes, version, no_large_files, no_remotes,
+  no_secrets, no_merge_conflicts
+        |
+   any fail? -> every row's propagate = FALSE
+        |
+   all pass
+        v
+PLATFORM CRITERIA (each _jobs row, independently)
+  status, unsupported, platform_version
+        |
+   all pass -> that row's propagate = TRUE
 ```
 
-Gates are shared: if `source` (the vignette/R CMD check build) fails, every
-platform comes back `FALSE`, linux included -- the platform-specific `_jobs`
-entries never even get checked. Platform criteria are independent: each
-requested platform (e.g. `linux-x86_64`, `macos-arm64`) is evaluated on its
-own, using its own `_jobs`/`_binaries` rows.
+The result of `check_propagation` is the `_jobs` data.frame with an extra
+`propagate` column that is `TRUE` or `FALSE`.
 
-## Compiled vs. pure-R (applies to every OS the same way)
+### Details
 
-`build` and `binary` match by **arch** for compiled packages, and by **OS
-only** (arch ignored) for pure-R packages. So for a pure-R package,
-`windows-arm64` and `windows-x86_64` share one job/binary row; for a compiled
-package, each arch is checked separately. This is the same rule on every OS
--- it isn't Windows- or macOS-specific.
+- Unsupported platforms in `Config/Bioconductor/UnsupportedPlatforms` evaluate
+to `FALSE`
+- In R Universe, vignettes are checked in the `source` `_job`
+- The package version for a platform is evaluated by the `platform_version`
+criteria to prevent a version from being propagated again
 
-## What's actually OS-specific
+#### Default critera
 
-**`platform_version`** -- what it compares the new version against:
+```{r default_critera}
+library(BiocPropagate)
 
-| OS | Compared against |
-|---|---|
-| Windows | One shared Bioconductor entry (both arches) |
-| macOS | A separate Bioconductor entry per arch |
-| Linux | Bioconductor's **source** data -- Bioconductor publishes no Linux binaries |
+criteria <- default_critera()
+names(criteria$gates)
+names(criteria$platform)
+```
 
-**`unsupported`** -- whether a platform can be declared unsupported:
+#### Additional critera
 
-| OS | Behavior |
-|---|---|
-| Linux | Always passes -- never treated as unsupported |
-| Windows / macOS | Checked against `Config/Bioconductor/UnsupportedPlatforms` |
+Additional criteria may be added. Gates may also be removed.
 
-If `platform_version` finds nothing published yet for the current
-Bioconductor branch (e.g. right after a release cutover, before anything has
-propagated), it falls back to the *previous* branch's data and requires the
-version's `y` component to have increased, rather than passing vacuously.
+```{r bioc-checks, eval = FALSE}
+criteria <- default_criteria()
 
-## Default criteria
+# Add
+criteria <- register_criterion(
+    criteria, "always_pass",
+    function(pkg_data, branch, bioc_pkg_data, source_path)
+        list(pass = TRUE, message = NA_character_),
+        type = "gates"
+    )
+names(criteria$gates)
 
-| | `default_criteria()` | `default_results_criteria()` |
-|---|---|---|
-| `binary` check | included | **excluded** -- `_binaries` doesn't exist yet at the point `check_propagation_from_results()` typically runs |
-| everything else | included | included |
-| used by default in | `check_propagation()` | `check_propagation_from_results()` |
+# Remove
+criteria <- unregister_gates(criteria, "always_pass")
+names(criteria$gates)
+```
+
+Packages granted exemptions from gate-level criteria can also be defined
+in an exemptions.txt DCF file in the package manifest with the following format:
+
+```
+# manifest/exemptions.txt
+Package: package1
+Exemptions: no_large_files, no_remotes
+
+Package: package2
+Exemptions: no_remotes
+```
+
+Note: A deploy key should be provided to the organization building the universe
+if the manifest is private.
 
 ## Example
 
+We'll do an example with live `_jobs` data from r-universe's public JSON API. 
+`DESCRIPTION` is reconstructed from the same payload and the result will be
+based on the default criteria.
+
 ```r
-result <- check_propagation("BiocCheck", branch = "release")
+library(BiocPropagate)
 
-result$gates
-#> TRUE
+pkg <- jsonlite::fromJSON("https://bioc-release.r-universe.dev/S4Vectors/json")
 
-result$platforms
-#> $`windows-x86_64`
-#> [1] TRUE
-#> $`macos-arm64`
-#> [1] TRUE
-#> $`linux-x86_64`
-#> [1] FALSE
+dir <- tempfile()
+dir.create(dir)
+writeLines(
+    c(paste("Package:", pkg[["Package"]]), paste("Version:", pkg[["Version"]])),
+    file.path(dir, "DESCRIPTION")
+)
+
+args <- list(
+    package = pkg[["Package"]],
+    universe = "bioc-release",
+    jobs = pkg[["_jobs"]],
+    source_path = dir
+)
+
+check_propagation(args)
 ```
