@@ -59,6 +59,8 @@ to `FALSE`
 - In R Universe, vignettes are checked in the `source` `_job`
 - The package version for a platform is evaluated by the `platform_version`
 criteria to prevent a version from being propagated again
+- OS-r_version-arch combinations not valid for a given Bioconductor branch
+evaluate to `NA`
 
 #### Default critera
 
@@ -115,7 +117,7 @@ based on the default criteria.
 ```{r example}
 library(BiocPropagate)
 
-pkg <- jsonlite::fromJSON("https://bioc-release.r-universe.dev/S4Vectors/json")
+pkg <- jsonlite::fromJSON("https://bioc-release.r-universe.dev/BiocCheck/json")
 
 dir <- tempfile()
 dir.create(dir)

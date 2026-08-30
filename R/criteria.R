@@ -8,6 +8,9 @@
 .PASSING_STATUSES <- c("OK", "WARNING", "NOTE")
 
 #' @noRd
+.PROPAGATED_OS <- c("linux", "macos", "windows")
+
+#' @noRd
 #' @title Test-fixture helper: a minimal r-universe payload
 #'
 #' @return A named list shaped like a real r-universe package payload.

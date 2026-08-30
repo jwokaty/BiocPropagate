@@ -91,7 +91,7 @@ test_that("check_propagation returns jobs with a propagate column", {
     skip_if_offline()
     dir <- .make_desc_dir("totallyNotARealPackageXyz", "1.2.0")
     jobs <- data.frame(
-        config = "linux-devel-x86_64",
+        config = "linux-release-x86_64",
         r = as.character(.branch_r_version("release")),
         check = "OK",
         stringsAsFactors = FALSE
@@ -112,7 +112,7 @@ test_that("check_propagation sets propagate = FALSE for every row when a gate fa
         extra = list(Remotes = "github::user/pkg")
     )
     jobs <- data.frame(
-        config = "linux-devel-x86_64",
+        config = "linux-release-x86_64",
         r = as.character(.branch_r_version("release")),
         check = "OK",
         stringsAsFactors = FALSE
@@ -129,7 +129,7 @@ test_that("check_propagation respects a caller-supplied criteria", {
     skip_if_offline()
     dir <- .make_desc_dir("totallyNotARealPackageXyz", "1.2.0")
     jobs <- data.frame(
-        config = "linux-devel-x86_64",
+        config = "linux-release-x86_64",
         r = as.character(.branch_r_version("release")),
         check = "OK",
         stringsAsFactors = FALSE
@@ -144,4 +144,66 @@ test_that("check_propagation respects a caller-supplied criteria", {
     )
     result <- check_propagation(args)
     expect_false(any(result[["propagate"]]))
+})
+
+test_that("check_propagation sets propagate = NA for non-platform rows (source, bioc-checks, wasm)", {
+    skip_if_offline()
+    dir <- .make_desc_dir("totallyNotARealPackageXyz", "1.2.0")
+    jobs <- data.frame(
+        config = c("source", "bioc-checks", "wasm-release", "linux-release-x86_64"),
+        r = as.character(.branch_r_version("release")),
+        check = "OK",
+        stringsAsFactors = FALSE
+    )
+    args <- list(
+        package = "totallyNotARealPackageXyz", universe = "bioc-release",
+        jobs = jobs, source_path = dir
+    )
+    result <- check_propagation(args)
+    expect_true(is.na(result[["propagate"]][result[["config"]] == "source"]))
+    expect_true(is.na(result[["propagate"]][result[["config"]] == "bioc-checks"]))
+    expect_true(is.na(result[["propagate"]][result[["config"]] == "wasm-release"]))
+    expect_false(is.na(result[["propagate"]][result[["config"]] == "linux-release-x86_64"]))
+})
+
+test_that("check_propagation sets propagate = NA for a channel that doesn't match the branch", {
+    skip_if_offline()
+    dir <- .make_desc_dir("totallyNotARealPackageXyz", "1.2.0")
+    jobs <- data.frame(
+        config = c(
+            "linux-release-x86_64", "linux-devel-x86_64", "windows-oldrel-x86_64"
+        ),
+        r = as.character(.branch_r_version("release")),
+        check = "OK",
+        stringsAsFactors = FALSE
+    )
+    args <- list(
+        package = "totallyNotARealPackageXyz", universe = "bioc-release",
+        jobs = jobs, source_path = dir
+    )
+    result <- check_propagation(args)
+    expect_false(is.na(result[["propagate"]][result[["config"]] == "linux-release-x86_64"]))
+    expect_true(is.na(result[["propagate"]][result[["config"]] == "linux-devel-x86_64"]))
+    expect_true(is.na(result[["propagate"]][result[["config"]] == "windows-oldrel-x86_64"]))
+})
+
+test_that("check_propagation's NA rows stay NA even when a gate fails", {
+    skip_if_offline()
+    dir <- .make_desc_dir(
+        "totallyNotARealPackageXyz", "1.2.0",
+        extra = list(Remotes = "github::user/pkg")
+    )
+    jobs <- data.frame(
+        config = c("wasm-release", "linux-release-x86_64"),
+        r = as.character(.branch_r_version("release")),
+        check = "OK",
+        stringsAsFactors = FALSE
+    )
+    args <- list(
+        package = "totallyNotARealPackageXyz", universe = "bioc-release",
+        jobs = jobs, source_path = dir
+    )
+    result <- check_propagation(args)
+    expect_true(is.na(result[["propagate"]][result[["config"]] == "wasm-release"]))
+    expect_false(result[["propagate"]][result[["config"]] == "linux-release-x86_64"])
 })

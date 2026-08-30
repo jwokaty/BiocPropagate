@@ -106,15 +106,16 @@ check_propagation <- function(args) {
     gate_pass <- .evaluate_gates(
         criteria[["gates"]], pkg_data, branch, bioc_pkg_data, source_path
     )
-
-    jobs[["propagate"]] <- if (!gate_pass) {
-        rep(FALSE, nrow(jobs))
-    } else {
-        vapply(seq_len(nrow(jobs)), function(i) {
-            .evaluate_platform(criteria[["platform"]], pkg_data, branch, bioc_pkg_data,
-                          jobs[i, ])
-        }, logical(1L))
-    }
-
+    jobs[["propagate"]] <- vapply(seq_len(nrow(jobs)), function(i) {
+        row <- jobs[i, ]
+        parsed <- .parse_job_config(row[["config"]])
+        if (is.na(parsed$os) || !parsed$os %in% .PROPAGATED_OS)
+            return(NA)
+        if (!identical(parsed$r_channel, branch))
+            return(NA)
+        if (!gate_pass)
+            return(FALSE)
+        .evaluate_platform(criteria[["platform"]], pkg_data, branch, bioc_pkg_data, row)
+    }, logical(1L))
     jobs
 }
