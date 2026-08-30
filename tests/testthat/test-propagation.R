@@ -39,7 +39,7 @@ test_that(".evaluate_gates catches an error from a gate and converts it to a cle
     expect_false(result)
 })
 
-test_that(".evaluate_gates is fail-fast", {
+test_that(".evaluate_gates runs every gate, not just until the first failure", {
     pkg_data <- .example_pkg_data()
     ran_second <- FALSE
     gates <- list(
@@ -51,7 +51,33 @@ test_that(".evaluate_gates is fail-fast", {
         }
     )
     suppressMessages(.evaluate_gates(gates, pkg_data, "release", NULL, NULL))
-    expect_false(ran_second)
+    expect_true(ran_second)
+})
+
+test_that(".evaluate_gates returns FALSE overall when any gate fails, even if later gates pass", {
+    pkg_data <- .example_pkg_data()
+    gates <- list(
+        first = function(pkg_data, branch, bioc_pkg_data, source_path)
+            list(pass = FALSE, message = "first failed"),
+        second = function(pkg_data, branch, bioc_pkg_data, source_path)
+            list(pass = TRUE, message = NA_character_)
+    )
+    result <- suppressMessages(.evaluate_gates(gates, pkg_data, "release", NULL, NULL))
+    expect_false(result)
+})
+
+test_that(".evaluate_gates messages once per failing gate, not just the first", {
+    pkg_data <- .example_pkg_data()
+    gates <- list(
+        first = function(pkg_data, branch, bioc_pkg_data, source_path)
+            list(pass = FALSE, message = "first failed"),
+        second = function(pkg_data, branch, bioc_pkg_data, source_path)
+            list(pass = FALSE, message = "second failed")
+    )
+    msgs <- capture_messages(.evaluate_gates(gates, pkg_data, "release", NULL, NULL))
+    combined <- paste(msgs, collapse = "")
+    expect_match(combined, "first failed")
+    expect_match(combined, "second failed")
 })
 
 test_that(".evaluate_platform passes when every criterion passes", {

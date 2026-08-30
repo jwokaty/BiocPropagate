@@ -21,7 +21,7 @@
 }
 
 #' @noRd
-#' @title Run gates in order, stopping at the first failure
+#' @title Run every gate, collecting whether all passed
 #'
 #' @param gates Named list of gate functions (see criteria.R).
 #' @param pkg_data,branch,bioc_pkg_data Passed through to each gate.
@@ -35,15 +35,16 @@
 #' gates <- default_criteria()$gates["vignettes"]
 #' .evaluate_gates(gates, pkg_data, "release", NULL, NULL)
 .evaluate_gates <- function(gates, pkg_data, branch, bioc_pkg_data, source_path) {
+    all_pass <- TRUE
     for (name in names(gates)) {
         result <- tryCatch(
             gates[[name]](pkg_data, branch, bioc_pkg_data, source_path),
             error = function(e) list(pass = FALSE, message = conditionMessage(e))
         )
         if (!.report_check(glue::glue("-- gate '{name}'"), pkg_data, result))
-            return(FALSE)
+            all_pass <- FALSE
     }
-    TRUE
+    all_pass
 }
 
 #' @noRd
@@ -73,7 +74,7 @@
 #'
 #' @description Reads a package's `_jobs` build-check results plus
 #'   its `DESCRIPTION` from `source_path`, and annotates each job with whether
-#'   it's safe to propagate; if any gate fails, every row gets `deploy = FALSE`.
+#'   it's safe to propagate; if any gate fails, every row gets `propagate = FALSE`.
 #'   Each row is checked independently against Bioconductor's
 #'   currently-published data for that platform. Previously propagated
 #'   artifacts will be FALSE on subsequent checks for that platform-version.
@@ -85,7 +86,7 @@
 #'   * `source_path` -- `character(1)` path to the extracted source
 #'   * `criteria` -- optional; a criteria list from [default_criteria()]
 #'
-#' @return `args$jobs`, with an added `deploy` column (`logical`) --
+#' @return `args$jobs`, with an added `propagate` column (`logical`) --
 #'   `TRUE`/`FALSE` per row.
 #'
 #' @export
@@ -98,7 +99,7 @@ check_propagation <- function(args) {
     if (is.null(criteria))
         criteria <- default_criteria()
     branch <- .universe_to_branch(universe)
-    # criteria <- .remove_criteria(package, branch, criteria)
+    # criteria <- remove_criteria(package, branch, criteria)
     pkg_data <- as.list(read.dcf(file.path(source_path, "DESCRIPTION"))[1, ])
     pkg_data[["_jobs"]] <- jobs
     bioc_pkg_data <- .get_all_bioc_pkg_data(branch, package)

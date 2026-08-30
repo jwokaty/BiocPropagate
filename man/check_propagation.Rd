@@ -17,13 +17,13 @@ check_propagation(args)
 }}
 }
 \value{
-\code{args$jobs}, with an added \code{deploy} column (\code{logical}) --
+\code{args$jobs}, with an added \code{propagate} column (\code{logical}) --
 \code{TRUE}/\code{FALSE} per row.
 }
 \description{
 Reads a package's \verb{_jobs} build-check results plus
 its \code{DESCRIPTION} from \code{source_path}, and annotates each job with whether
-it's safe to propagate; if any gate fails, every row gets \code{deploy = FALSE}.
+it's safe to propagate; if any gate fails, every row gets \code{propagate = FALSE}.
 Each row is checked independently against Bioconductor's
 currently-published data for that platform. Previously propagated
 artifacts will be FALSE on subsequent checks for that platform-version.
