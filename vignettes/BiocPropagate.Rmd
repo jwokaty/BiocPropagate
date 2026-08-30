@@ -65,7 +65,7 @@ criteria to prevent a version from being propagated again
 ```{r default_critera}
 library(BiocPropagate)
 
-criteria <- default_critera()
+criteria <- default_criteria()
 names(criteria$gates)
 names(criteria$platform)
 ```
@@ -112,7 +112,7 @@ We'll do an example with live `_jobs` data from r-universe's public JSON API.
 `DESCRIPTION` is reconstructed from the same payload and the result will be
 based on the default criteria.
 
-```r
+```{r example}
 library(BiocPropagate)
 
 pkg <- jsonlite::fromJSON("https://bioc-release.r-universe.dev/S4Vectors/json")
@@ -131,5 +131,6 @@ args <- list(
     source_path = dir
 )
 
-check_propagation(args)
+propagation <- check_propagation(args)
+print(propagation)
 ```
