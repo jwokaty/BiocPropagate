@@ -15,3 +15,13 @@ test_that(".get_exemptions clones the branch and returns exemptions", {
     expect_equal(c("no_large_files", "no_secrets"),
                  .get_exemptions("package1", "RELEASE_3_23", manifest = MANIFEST))
 })
+
+test_that(".bioc_branch_to_git_branch returns devel", {
+    expect_equal("devel",
+                 .bioc_branch_to_git_branch("devel"))
+})
+
+test_that(".bioc_branch_to_git_branch returns RELEASE_3_23", {
+    expect_equal("RELEASE_3_23",
+                 .bioc_branch_to_git_branch("release"))
+})

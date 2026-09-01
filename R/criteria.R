@@ -1,6 +1,6 @@
 #' manifest
 #' @noRd
-.BIOCONDUCTOR_MANIFEST <- "git@git.bioconductor.org:admin/manifest"
+.BIOCONDUCTOR_MANIFEST <- "http://git.bioconductor.org/admin/manifest"
 
 #' Build/check statuses that count as passing. Only ERROR/FAIL/CANCELLED
 #' are failures.
@@ -9,29 +9,6 @@
 
 #' @noRd
 .PROPAGATED_OS <- c("linux", "macos", "windows")
-
-#' @noRd
-#' @title Test-fixture helper: a minimal r-universe payload
-#'
-#' @return A named list shaped like a real r-universe package payload.
-.example_pkg_data <- function() {
-    r_ver <- paste0(as.character(.branch_r_version("release")), ".0")
-    list(
-        Package = "examplePkg",
-        Version = "1.2.0",
-        `_jobs` = data.frame(
-            config = c(
-                "source", "bioc-checks",
-                "macos-release-arm64",
-                "windows-release-x86_64", "windows-release-arm64",
-                "linux-release-x86_64"
-            ),
-            r = r_ver,
-            check = "OK",
-            stringsAsFactors = FALSE
-        )
-    )
-}
 
 #' @noRd
 #' @title Split a platform string like "macos-x86_64" into os and arch
@@ -535,7 +512,7 @@ unregister_gates <- function(criteria, gates) {
 #' list of gate names, such as in `source_criteria()`.
 #'  
 #' @param package name
-#' @param branch Bioconductor git branch
+#' @param universe name
 #' @param criteria list()
 #' @param manifest (defaults to .BIOCONDUCTOR_MANIFEST) path to repository
 #'
@@ -543,12 +520,13 @@ unregister_gates <- function(criteria, gates) {
 #'
 #' @examples
 #' \dontrun{
-#' remove_criteria("BiocCheck","devel", default_criteria())
+#' remove_criteria("BiocCheck","bioc", default_criteria())
 #' }
 #'
 #' @export
-remove_criteria <- function(package, branch, criteria,
+remove_criteria <- function(package, universe, criteria,
                             manifest = .BIOCONDUCTOR_MANIFEST) {
+    branch <- .bioc_branch_to_git_branch(universe) 
     exemptions <- .get_exemptions(package, branch, manifest = manifest)
     if (length(exemptions) != 0)
         unregister_gates(criteria, exemptions)

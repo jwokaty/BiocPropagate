@@ -56,7 +56,7 @@ The result of `check_propagation` is the `_jobs` data.frame with an extra
 
 - Unsupported platforms in `Config/Bioconductor/UnsupportedPlatforms` evaluate
 to `FALSE`
-- In R Universe, vignettes are checked in the `source` `_job`
+- In R Universe, vignettes are checked in the `source` job
 - The package version for a platform is evaluated by the `platform_version`
 criteria to prevent a version from being propagated again
 - OS-r_version-arch combinations not valid for a given Bioconductor branch
@@ -112,12 +112,13 @@ if the manifest is private.
 
 We'll do an example with live `_jobs` data from r-universe's public JSON API. 
 `DESCRIPTION` is reconstructed from the same payload and the result will be
-based on the default criteria.
+based on the default criteria and exemptions for `r Biocpkg("flowCore")`,
+which is exempt from `no_large_files`.
 
 ```{r example}
 library(BiocPropagate)
 
-pkg <- jsonlite::fromJSON("https://bioc-release.r-universe.dev/BiocCheck/json")
+pkg <- jsonlite::fromJSON("https://bioc-release.r-universe.dev/flowCore/json")
 
 dir <- tempfile()
 dir.create(dir)

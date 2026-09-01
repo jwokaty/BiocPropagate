@@ -436,3 +436,10 @@ test_that("remove_criteria removes no criteria if no exemptions", {
                  remove_criteria("package3", "devel", default_criteria(),
                                  manifest))
 })
+
+test_that("remove_criteria removes `no_large_files` for flowCore", {
+    criteria <- default_criteria()
+    criteria$gates[c("no_large_files")] <- NULL
+    expect_equal(criteria,
+                 remove_criteria("flowCore", "release", default_criteria()))
+})

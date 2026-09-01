@@ -1,6 +1,6 @@
 Package: BiocPropagate
 Title: Validate Bioconductor Package Versions and Build Status via R-Universe
-Version: 0.99.3
+Version: 0.99.4
 Authors@R: person(
     "Marcel", "Ramos", , "marcel.ramos@sph.cuny.edu", role = c("aut", "cre")
     )
